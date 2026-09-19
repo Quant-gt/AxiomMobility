@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Axiom Fleet Driver",
+    "slug": "axiom-fleet-driver",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "axiomfleetdriver",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.axiomfleet.driver",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Axiom Fleet uses your location only while a duty is active to keep dispatch and passengers informed.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Axiom Fleet uses background location only during an active duty, with your permission.",
+        "NSCameraUsageDescription": "Use the camera to attach duty proof and expense receipts.",
+        "NSUserNotificationUsageDescription": "Receive duty assignments, route changes and safety alerts."
+      }
+    },
+    "android": {
+      "package": "com.axiomfleet.driver",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-location",
+      "expo-camera",
+      "expo-notifications",
+      "expo-asset"
+    ],
+    "extra": {
+      "apiBaseUrl": "http://localhost:4173"
+    }
+  }
+}

@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technical PRD — Car Rental Operations Platform</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f8f9fa;
+    --border: #e2e6ea;
+    --text: #1a1d23;
+    --muted: #6b7280;
+    --accent: #1e40af;
+    --accent-light: #dbeafe;
+    --warn: #b45309;
+    --warn-light: #fef3c7;
+    --ok: #166534;
+    --ok-light: #dcfce7;
+    --red: #991b1b;
+    --red-light: #fee2e2;
+    --tag-p0: #dc2626;
+    --tag-p1: #d97706;
+    --tag-p2: #4b5563;
+    --code-bg: #f1f5f9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #60a5fa;
+      --accent-light: #1e3a5f;
+      --warn: #fbbf24;
+      --warn-light: #292524;
+      --ok: #4ade80;
+      --ok-light: #14532d;
+      --red: #f87171;
+      --red-light: #450a0a;
+      --code-bg: #1e293b;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .layout { display: flex; }
+  nav {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    padding: 24px 0;
+    flex-shrink: 0;
+  }
+  nav .logo {
+    padding: 0 20px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  nav ul { list-style: none; }
+  nav ul li a {
+    display: block;
+    padding: 5px 20px;
+    font-size: 12.5px;
+    color: var(--muted);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  nav ul li a:hover { color: var(--text); border-left-color: var(--accent); background: var(--accent-light); }
+  nav ul li.section > a { font-weight: 600; color: var(--text); margin-top: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; }
+  nav ul li.sub > a { padding-left: 32px; font-size: 12px; }
+  main {
+    flex: 1;
+    padding: 48px 60px;
+    max-width: 1100px;
+    overflow-x: hidden;
+  }
+  .cover {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px;
+    margin-bottom: 48px;
+    background: var(--surface);
+  }
+  .cover h1 { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1.2; margin-bottom: 8px; }
+  .cover .subtitle { font-size: 15px; color: var(--muted); margin-bottom: 24px; }
+  .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .meta-item { padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+  .meta-item .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+  .meta-item .value { font-size: 13px; font-weight: 600; color: var(--text); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge.p0 { background: var(--red-light); color: var(--red); }
+  .badge.p1 { background: var(--warn-light); color: var(--warn); }
+  .badge.p2 { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+  .badge.mvp { background: var(--ok-light); color: var(--ok); }
+  .badge.v1 { background: var(--accent-light); color: var(--accent); }
+  .badge.v2 { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+  .badge.new { background: #fef3c7; color: #92400e; }
+  .badge.gap { background: #fee2e2; color: #7f1d1d; }
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  h3 { font-size: 17px; font-weight: 700; margin: 32px 0 12px; color: var(--text); }
+  h4 { font-size: 14px; font-weight: 700; margin: 20px 0 8px; color: var(--text); }
+  p { margin-bottom: 12px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface);
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--surface); }
+  code {
+    font-family: 'SF Mono', 'Fira Mono', monospace;
+    font-size: 12px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 12px 0;
+  }
+  pre code { background: none; padding: 0; }
+  .req {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 16px 0;
+    overflow: hidden;
+  }
+  .req-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .req-id { font-size: 12px; font-weight: 700; color: var(--accent); font-family: monospace; min-width: 72px; }
+  .req-title { font-size: 14px; font-weight: 700; flex: 1; }
+  .req-body { padding: 14px 16px; }
+  .req-body p { margin-bottom: 8px; }
+  .ac { background: var(--ok-light); border-left: 3px solid var(--ok); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-top: 10px; font-size: 12.5px; }
+  .tech-note { background: var(--accent-light); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-top: 10px; font-size: 12.5px; }
+  .gap-note { background: var(--red-light); border-left: 3px solid var(--red); padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 10px 0; font-size: 12.5px; }
+  .warn-box { background: var(--warn-light); border-left: 3px solid var(--warn); padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 16px 0; font-size: 13px; }
+  .section-anchor { display: block; position: relative; top: -80px; visibility: hidden; }
+  ul { padding-left: 20px; margin: 8px 0; }
+  ul li { margin-bottom: 4px; }
+  .arch-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 16px 0; }
+  .arch-box h4 { margin-top: 0; }
+  .indecab-teardown { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 20px 24px; margin: 16px 0; }
+  .indecab-teardown h4 { color: #9a3412; margin-top: 0; }
+  @media (max-width: 900px) {
+    nav { display: none; }
+    main { padding: 24px 20px; }
+    .meta-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- SIDEBAR NAV -->
+<nav>
+  <div class="logo">Technical PRD</div>
+  <ul>
+    <li class="section"><a href="#s0">Document Header</a></li>
+    <li class="section"><a href="#s1">1. Introduction</a></li>
+    <li class="sub"><a href="#s1-1">1.1 Purpose</a></li>
+    <li class="sub"><a href="#s1-2">1.2 Background &amp; Competitor Analysis</a></li>
+    <li class="sub"><a href="#s1-3">1.3 Product Goals</a></li>
+    <li class="sub"><a href="#s1-4">1.4 Non-Goals</a></li>
+    <li class="section"><a href="#s2">2. System Architecture</a></li>
+    <li class="sub"><a href="#s2-1">2.1 High-Level Architecture</a></li>
+    <li class="sub"><a href="#s2-2">2.2 Technology Stack</a></li>
+    <li class="sub"><a href="#s2-3">2.3 Infrastructure &amp; Hosting</a></li>
+    <li class="sub"><a href="#s2-4">2.4 Scaling Architecture</a></li>
+    <li class="sub"><a href="#s2-5">2.5 API Design Principles</a></li>
+    <li class="section"><a href="#s3">3. Users &amp; Personas</a></li>
+    <li class="section"><a href="#s4">4. Release Strategy</a></li>
+    <li class="section"><a href="#s5">5. Functional Requirements</a></li>
+    <li class="sub"><a href="#e1">E1 Identity &amp; Access</a></li>
+    <li class="sub"><a href="#e2">E2 Masters &amp; Pricing</a></li>
+    <li class="sub"><a href="#e3">E3 Bookings &amp; Duties</a></li>
+    <li class="sub"><a href="#e4">E4 Duty Slip &amp; Calc Engine</a></li>
+    <li class="sub"><a href="#e5">E5 Billing, E-Invoice, Collections</a></li>
+    <li class="sub"><a href="#e6">E6 Purchase &amp; Fleet Cost</a></li>
+    <li class="sub"><a href="#e7">E7 Corporate Module</a></li>
+    <li class="sub"><a href="#e8">E8 Driver Mobile App</a></li>
+    <li class="sub"><a href="#e9">E9 Passenger App</a></li>
+    <li class="sub"><a href="#e10">E10 Tracking &amp; Alerts</a></li>
+    <li class="sub"><a href="#e11">E11 Communications</a></li>
+    <li class="sub"><a href="#e12">E12 Reports &amp; Analytics</a></li>
+    <li class="sub"><a href="#e13">E13 Network &amp; Settlements</a></li>
+    <li class="sub"><a href="#e14">E14 Platform Admin Console</a></li>
+    <li class="sub"><a href="#e15">E15 Offline &amp; Resilience</a></li>
+    <li class="section"><a href="#s6">6. Key User Journeys</a></li>
+    <li class="section"><a href="#s7">7. Business Rules (Normative)</a></li>
+    <li class="section"><a href="#s8">8. UX / UI Requirements</a></li>
+    <li class="section"><a href="#s9">9. Non-Functional Requirements</a></li>
+    <li class="section"><a href="#s10">10. Data Model</a></li>
+    <li class="section"><a href="#s11">11. Integration Requirements</a></li>
+    <li class="section"><a href="#s12">12. Security, Privacy &amp; Compliance</a></li>
+    <li class="section"><a href="#s13">13. Dependencies &amp; Constraints</a></li>
+    <li class="section"><a href="#s14">14. Risks</a></li>
+    <li class="section"><a href="#s15">15. Acceptance &amp; DoD</a></li>
+    <li class="section"><a href="#s16">16. Glossary</a></li>
+  </ul>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main>
+
+<!-- COVER -->
+<div class="cover">
+  <h1>Car Rental Operations Platform</h1>
+  <div class="subtitle">Technical Product Requirements Document</div>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="label">Document Type</div><div class="value">Technical PRD</div></div>
+    <div class="meta-item"><div class="label">Status</div><div class="value">Draft for Engineering Review</div></div>
+    <div class="meta-item"><div class="label">Classification</div><div class="value">Confidential</div></div>
+    <div class="meta-item"><div class="label">Prepared by</div><div class="value">Product Management</div></div>
+    <div class="meta-item"><div class="label">Date</div><div class="value">September 2026</div></div>
+    <div class="meta-item"><div class="label">Companion</div><div class="value">Business Requirements Document (BRD)</div></div>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Approvals Required Before Build</strong><br>
+  Head of Product · Head of Engineering · Head of Design · Fleet Operations SME · Information Security / Compliance
+</div>
+
+<p><strong>Conventions:</strong> Functional requirements are numbered <strong>FR-100…</strong> grouped by epic. Priority: P0 = MVP must-have, P1 = V1, P2 = V2+. Each requirement ends with testable <strong>Acceptance Criteria (AC)</strong> and a <strong>Technical Note (TN)</strong> describing the implementation contract. Business rules in §7 are normative.</p>
+
+<!-- ===== SECTION 1 ===== -->
+<a class="section-anchor" id="s1"></a>
+<h2>1. Introduction</h2>
+
+<a class="section-anchor" id="s1-1"></a>
+<h3>1.1 Purpose</h3>
+<p>This Technical PRD specifies what the Car Rental Operations Platform must do and how it must be built: vendor (fleet) web console, corporate client web console, driver mobile app, passenger mobile app, and internal admin console — including architecture, data contracts, business rules, integrations, UX, and quality requirements. It is the authoritative build-to specification for design and engineering.</p>
+
+<a class="section-anchor" id="s1-2"></a>
+<h3>1.2 Background &amp; Competitor Analysis (Indecab Teardown)</h3>
+
+<p>Indecab (Indecab Technology Services Pvt. Ltd, Mumbai) is the primary competitor in the Indian B2B fleet-operations SaaS segment. A systematic analysis of their published product surface reveals the following capabilities and structural gaps that this platform must address or exceed:</p>
+
+<div class="indecab-teardown">
+  <h4>Indecab Product Surface — What They Ship</h4>
+  <table>
+    <tr><th>Surface</th><th>App / Channel</th><th>Observed Capabilities</th><th>Known Weaknesses (from public reviews)</th></tr>
+    <tr><td>Fleet Web Console</td><td>app.indecab.com</td><td>Duty allotment, driver notification, duty slip auto-creation (KM + time tracking), expense recording, fuel reports, digital signatures, customer management, invoicing, basic billing</td><td>No public API, no CSVbulk import documented, UI inconsistency flagged by users</td></tr>
+    <tr><td>Driver App (Indecab Go)</td><td>com.indecab.go · 100K+ DL · 4.5★</td><td>Push notifications on allotment, duty start/stop, auto KM+time tracking, expense input with photo receipts, fuel entry, digital signature capture</td><td>GPS lock failure on open areas, "stop duty" hang requiring cache clear (active July 2026), phone overheating reported on low-end devices, odometer photo re-upload loop (Aug 2026)</td></tr>
+    <tr><td>Corporate Passenger App</td><td>com.indecab.corporate · 5K+ DL · 4.5★</td><td>Booking requests, booking status, past trips + route history, supplier/driver contact</td><td>Very low adoption (5K vs 100K driver DLs), authentication issues ("daily issue making me late"), no self-service corporate policy controls visible</td></tr>
+    <tr><td>Indecall Dialer</td><td>com.indecab.indecall · 10K+ DL · 3.9★</td><td>Click-to-call from web platform to office phone, call log, duty activity log integration</td><td>Requires a separate app install for a basic click-to-dial; poor ratings (3.9); in-app purchases on a workflow tool; most reviews very old (2019–2022)</td></tr>
+  </table>
+</div>
+
+<div class="indecab-teardown">
+  <h4>Indecab Legacy Stack — Inferred Architectural Constraints</h4>
+  <ul>
+    <li><strong>Monolithic web application:</strong> Single web console for fleet operations. No evidence of micro-frontend or modular tenant architecture.</li>
+    <li><strong>No offline-first driver app:</strong> GPS failure on open areas + stop-duty hang requiring cache-clear are symptoms of a connected-only architecture that doesn't handle state transitions gracefully on reconnect.</li>
+    <li><strong>Dialer as a separate app (Indecall):</strong> A dedicated app just for click-to-call is a legacy integration pattern. It uses in-app purchases on a B2B workflow tool — an anti-pattern. This indicates masked telephony is not natively embedded in the core product.</li>
+    <li><strong>Limited corporate module:</strong> The corporate app has 5K downloads vs 100K for the driver app — a 20× gap. This signals their corporate module is underdeveloped or not actively sold.</li>
+    <li><strong>No visible admin console:</strong> No evidence of a multi-tenant SaaS admin panel; likely operated via direct DB queries or a basic internal tool.</li>
+    <li><strong>Scaling limits:</strong> No published SLA, no evidence of async processing for billing at scale, no public API / webhooks. Month-end billing peaks at enterprise fleet sizes (10K+ duties/month) are not addressed.</li>
+    <li><strong>Data retention:</strong> Corporate app data safety declaration: "Data can't be deleted" — a DPDP compliance gap that is a competitive and regulatory liability.</li>
+    <li><strong>Telephony gap:</strong> Indecall has in-app purchases and a 3.9 rating — indicating the feature is bolted-on and poorly received. No masked calling in core product.</li>
+  </ul>
+</div>
+
+<div class="warn-box">
+  <strong>Key Differentiation Mandate:</strong> This platform must ship with (1) a fully offline-capable driver app, (2) masked calling natively embedded — no separate app, (3) a corporate module designed for enterprise-scale (5K+ employee import, multi-level approvals, invoice verification), (4) a full multi-tenant admin console, (5) DPDP-compliant data erasure, and (6) async billing scale to 10K lines. These are not V2 features — they are baseline competitive requirements.
+</div>
+
+<a class="section-anchor" id="s1-3"></a>
+<h3>1.3 Product Goals</h3>
+<ol>
+  <li>Any fleet operational within days via guided setup, templates, and bulk import.</li>
+  <li>Deterministic, explainable billing: every charge traceable to contract, measurement, and proof.</li>
+  <li>Field reliability: offline-tolerant driver app on Android and iOS on low-end devices.</li>
+  <li>Corporate transparency: live trips, verified invoices, enforced policy and SLA.</li>
+  <li>Enterprise trust: auditability, India data residency, DPDP privacy rights, SOC 2 path.</li>
+  <li>Operate the SaaS business from one admin console with full client, vendor, driver, cab, user, and payment visibility.</li>
+</ol>
+
+<a class="section-anchor" id="s1-4"></a>
+<h3>1.4 Non-Goals (this horizon)</h3>
+<p>Statutory payroll filing, vehicle-hardware sales, multi-country tax, consumer ride-hailing, in-house payment aggregation, reseller programme (deferred to V2).</p>
+
+<!-- ===== SECTION 2 ===== -->
+<a class="section-anchor" id="s2"></a>
+<h2>2. System Architecture</h2>
+
+<a class="section-anchor" id="s2-1"></a>
+<h3>2.1 High-Level Architecture</h3>
+
+<div class="arch-box">
+<pre>
+┌──────────────────────────────────────────────────────────────────────────┐
+│                          CLIENT SURFACES                                 │
+│  Vendor Web Console │ Corporate Web Console │ Admin Console (internal)  │
+│  Driver App (iOS/Android)  │  Passenger App (iOS/Android)               │
+│  Supplier Portal (web)  │  SMS Magic-Link (no-app close path)            │
+└────────────────────────────┬─────────────────────────────────────────────┘
+                             │ HTTPS / WSS
+┌────────────────────────────▼─────────────────────────────────────────────┐
+│                         API GATEWAY / BFF LAYER                          │
+│  Rate limiting · Auth token validation · Tenant context injection        │
+│  Request routing · Response caching (CDN-eligible responses)             │
+└─────┬──────────┬──────────────┬───────────────┬──────────────────────────┘
+      │          │              │               │
+┌─────▼──┐ ┌────▼────┐  ┌──────▼──────┐ ┌──────▼──────┐
+│Identity│ │Booking/ │  │Billing/     │ │Tracking/    │
+│& Auth  │ │Duty     │  │Invoice      │ │Alerts       │
+│Service │ │Service  │  │Service      │ │Service      │
+└─────┬──┘ └────┬────┘  └──────┬──────┘ └──────┬──────┘
+      │         │              │               │
+┌─────▼─────────▼──────────────▼───────────────▼──────────────────────────┐
+│                        MESSAGE BUS (Event Streaming)                     │
+│  duty.created · duty.started · duty.completed · invoice.issued           │
+│  payment.received · alert.triggered · track.batch                        │
+└──────────────────────────────────────────────────────────────────────────┘
+      │         │              │               │
+┌─────▼──┐ ┌────▼────┐  ┌──────▼──────┐ ┌──────▼──────┐
+│ Primary│ │ Read    │  │  Object     │ │ Time-Series │
+│  DB    │ │ Replica │  │  Store      │ │   Store     │
+│(OLTP)  │ │(Reports)│  │(Files/Proof)│ │  (GPS pts)  │
+└────────┘ └─────────┘  └─────────────┘ └─────────────┘
+</pre>
+</div>
+
+<a class="section-anchor" id="s2-2"></a>
+<h3>2.2 Technology Stack</h3>
+
+<table>
+  <tr><th>Layer</th><th>Chosen / Recommended</th><th>Rationale</th></tr>
+  <tr><td>Web Frontend</td><td>React 18 + TypeScript, TanStack Query, Zustand, Vite</td><td>Component reuse across vendor/corporate/admin consoles; virtualised table (TanStack Virtual)</td></tr>
+  <tr><td>Mobile Apps</td><td>React Native (Expo managed) or Flutter — decision TBD by Q1 sprint-0</td><td>Shared codebase for driver + passenger; offline-first via WatermelonDB / SQLite</td></tr>
+  <tr><td>API Layer</td><td>Node.js (NestJS) or Go — decision TBD by sprint-0</td><td>NestJS for DX speed at MVP; Go for tracking ingest throughput; evaluate at sprint-0</td></tr>
+  <tr><td>Primary Database</td><td>PostgreSQL 16 (RDS Multi-AZ, Mumbai)</td><td>Row-level security for tenant isolation; JSONB for flexible attributes; PITR support</td></tr>
+  <tr><td>Time-Series (GPS)</td><td>TimescaleDB or ClickHouse (read-heavy)</td><td>Hypertable partitioning by time + tenant for route query speed</td></tr>
+  <tr><td>Object Storage</td><td>AWS S3 (ap-south-1)</td><td>Evidence packs, invoice PDFs, odometer photos — presigned URL access</td></tr>
+  <tr><td>Cache / Session</td><td>Redis (ElastiCache, cluster mode)</td><td>Rate limiting, session store, idempotency keys, duty-state locks</td></tr>
+  <tr><td>Message Bus</td><td>AWS SQS + SNS (MVP); migrate to Kafka if throughput demands</td><td>SQS for async jobs (billing builds, e-invoice); SNS for fanout (alerts, push)</td></tr>
+  <tr><td>Push Notifications</td><td>FCM (Android) + APNs (iOS) via AWS Pinpoint or Firebase Admin SDK</td><td>Unified delivery with delivery receipts; quiet-hours enforcement</td></tr>
+  <tr><td>Maps</td><td>Google Maps Platform (server-side proxy + tenant quota)</td><td>Places API, Geocoding, Routes API; fallback evaluated to MapmyIndia for India</td></tr>
+  <tr><td>SMS / Voice</td><td>DLT-registered; primary: Kaleyra / Gupshup; fallback: Twilio / Exotel</td><td>Multi-provider failover with delivery log; provider abstraction layer</td></tr>
+  <tr><td>WhatsApp BSP</td><td>Gupshup or Interakt (approved BSP)</td><td>Template management + delivery receipts</td></tr>
+  <tr><td>Payment Gateway</td><td>Razorpay (primary) + Cashfree (fallback)</td><td>Idempotent webhook handling; UPI, NEFT, card, mandate for dunning</td></tr>
+  <tr><td>E-Invoice GSP</td><td>ClearTax GSP or Karvy GSP</td><td>IRN / QR / cancel; sandbox pre-prod test suite</td></tr>
+  <tr><td>Masked Telephony</td><td>Exotel Click-to-Call or Knowlarity (no separate app required)</td><td>Embedded in web/app via API; no Indecall-style separate dialer needed</td></tr>
+  <tr><td>Accounting Sync</td><td>Tally XML + Zoho Books REST API</td><td>V1; parties, invoices, receipts, notes</td></tr>
+  <tr><td>Secret Management</td><td>AWS Secrets Manager + Parameter Store</td><td>Rotation policies; no secrets in environment variables or code</td></tr>
+  <tr><td>Observability</td><td>OpenTelemetry → Grafana Cloud / Datadog; structured JSON logs; Sentry (mobile)</td><td>100% services instrumented; PII/OTP redacted at log level</td></tr>
+  <tr><td>CI/CD</td><td>GitHub Actions → ECR → ECS Fargate (or EKS at V2 scale)</td><td>Feature-flag gated deployments; blue-green; rollback &lt; 5 min</td></tr>
+</table>
+
+<a class="section-anchor" id="s2-3"></a>
+<h3>2.3 Infrastructure &amp; Hosting</h3>
+
+<div class="arch-box">
+  <h4>Deployment Topology (India Data Residency Mandatory)</h4>
+  <ul>
+    <li><strong>Primary Region:</strong> AWS ap-south-1 (Mumbai) — all customer data plane.</li>
+    <li><strong>DR Region:</strong> AWS ap-south-2 (Hyderabad) — async replication; RTO ≤ 30 min, RPO ≤ 5 min.</li>
+    <li><strong>CDN:</strong> CloudFront with WAF — static assets, API response caching for public endpoints.</li>
+    <li><strong>VPC:</strong> Private subnets for all services; public subnets for ALB only; no direct DB exposure.</li>
+    <li><strong>Compute:</strong> ECS Fargate (stateless services), Lambda (event handlers, short jobs), RDS Multi-AZ (PostgreSQL).</li>
+    <li><strong>Backups:</strong> Daily automated snapshots + 30-day PITR; cross-region backup copy for DR.</li>
+  </ul>
+</div>
+
+<a class="section-anchor" id="s2-4"></a>
+<h3>2.4 Scaling Architecture</h3>
+
+<table>
+  <tr><th>Scenario</th><th>Baseline</th><th>Target Peak</th><th>Mechanism</th></tr>
+  <tr><td>Month-end billing</td><td>~1K duties/day</td><td>10K duties/day (10×)</td><td>Async invoice build via SQS worker pool; horizontal ECS scaling; no manual action required</td></tr>
+  <tr><td>GPS ingest</td><td>100 concurrent drivers</td><td>5K concurrent drivers</td><td>Dedicated ingest service; TimescaleDB bulk insert; Redis buffer; decouple from query path</td></tr>
+  <tr><td>Table rendering</td><td>500 rows</td><td>5,000 rows interactive</td><td>Virtualised scroll (TanStack Virtual); server-side pagination cursor; 50fps on reference device</td></tr>
+  <tr><td>Corporate employee import</td><td>100 rows</td><td>5,000 rows</td><td>Async CSV processor with row-level error report; &lt;5 min for 5K rows</td></tr>
+  <tr><td>Tracking event visibility</td><td>—</td><td>p95 &lt; 60s</td><td>WebSocket push from ingest service; fallback to 30s HTTP poll for poor-connectivity devices</td></tr>
+</table>
+
+<a class="section-anchor" id="s2-5"></a>
+<h3>2.5 API Design Principles</h3>
+<ul>
+  <li><strong>REST + JSON</strong> for all client-facing APIs; GraphQL evaluated for admin console V2 only if query fan-out becomes a problem.</li>
+  <li><strong>Versioning:</strong> URI-based versioning (<code>/v1/…</code>); version sunset policy published with 6-month notice.</li>
+  <li><strong>Idempotency:</strong> All mutating operations accept <code>Idempotency-Key</code> header; payment webhooks idempotent by design.</li>
+  <li><strong>Pagination:</strong> Cursor-based for all list endpoints; no offset-based pagination for large datasets.</li>
+  <li><strong>Tenant isolation:</strong> Tenant ID injected from JWT claims, never from request body; enforced at middleware layer before any resolver.</li>
+  <li><strong>Rate limiting:</strong> Per-tenant token bucket at API gateway; burst allowance for month-end ops.</li>
+  <li><strong>Webhooks (V2):</strong> HMAC-SHA256 signed; retry with exponential backoff; delivery log visible to tenant.</li>
+</ul>
+
+<!-- ===== SECTION 3 ===== -->
+<a class="section-anchor" id="s3"></a>
+<h2>3. Users &amp; Personas</h2>
+
+<table>
+  <tr><th>ID</th><th>Persona</th><th>Description</th><th>Primary Surface</th><th>Key Jobs</th></tr>
+  <tr><td>U1</td><td>Fleet Owner</td><td>Owns P&amp;L</td><td>Vendor web</td><td>Margin per duty, collections, growth</td></tr>
+  <tr><td>U2</td><td>Dispatcher</td><td>Daily coordination</td><td>Vendor web</td><td>Allot fast, handle exceptions</td></tr>
+  <tr><td>U3</td><td>Billing Executive</td><td>Invoicing &amp; dispatch</td><td>Vendor web</td><td>Same-day accurate bills</td></tr>
+  <tr><td>U4</td><td>Driver</td><td>Executes duties</td><td>Driver app</td><td>Simple duties, correct payout</td></tr>
+  <tr><td>U5</td><td>DCO Supplier</td><td>Driver + own vehicle</td><td>Driver app + supplier portal</td><td>Jobs, transparent settlement</td></tr>
+  <tr><td>U6</td><td>Corporate Travel Admin</td><td>Policy + vendors</td><td>Corporate web</td><td>Compliance, SLA, vendor quality</td></tr>
+  <tr><td>U7</td><td>Employee / Passenger</td><td>Books and rides</td><td>Passenger app</td><td>Book fast, ride safe</td></tr>
+  <tr><td>U8</td><td>Corporate Finance</td><td>Verification + payables</td><td>Corporate web</td><td>Verified bills, forecasts</td></tr>
+  <tr><td>U9</td><td>Associate Fleet</td><td>Overflow exchange</td><td>Vendor web — Network (V2)</td><td>Trusted duty exchange</td></tr>
+  <tr><td>U10</td><td>Platform Admin</td><td>Operate the SaaS business</td><td>Admin console (internal)</td><td>Clients, vendors, drivers, cabs, users, subscriptions, payments, support, audit</td></tr>
+</table>
+
+<!-- ===== SECTION 4 ===== -->
+<a class="section-anchor" id="s4"></a>
+<h2>4. Release Strategy</h2>
+
+<table>
+  <tr><th>Phase</th><th>Timeline</th><th>Exit Gate</th><th>Key Deliverables</th></tr>
+  <tr>
+    <td><strong>MVP — "One Fleet Live"</strong></td>
+    <td>Months 1–3</td>
+    <td>Pilot fleets run 100% of weekly duties and billing in-platform; ≥95% digital slips; invoice dispatch ≤24h of period close</td>
+    <td>Vendor console + driver app; E1–E6 (P0), E8, E10 core, E11 core, E12 standard, E14 core, E15 offline layer</td>
+  </tr>
+  <tr>
+    <td><strong>V1 — "Corporate Ready"</strong></td>
+    <td>Months 4–6</td>
+    <td>Corporate client go-live; ≥70% invoice auto-accept; masked calling live; e-invoicing sandbox green</td>
+    <td>Corporate console + passenger app, OTP enforcement, live-share, e-invoicing, Tally/Zoho, purchase + duty P&amp;L, payroll-lite, petty cash, feedback, permissions v2, masked calling (native, no separate app), SSO, full admin console</td>
+  </tr>
+  <tr>
+    <td><strong>V2 — "Automation Moat"</strong></td>
+    <td>Months 7–12</td>
+    <td>AI allotment accuracy ≥85%; network onboarded with ≥3 associate fleets</td>
+    <td>AI allotment, anomaly detection, OCR, auto-collections/dunning, network + settlements, report builder, hardware-GPS ingest, public API/webhooks, white-label</td>
+  </tr>
+</table>
+
+<!-- ===== SECTION 5 ===== -->
+<a class="section-anchor" id="s5"></a>
+<h2>5. Functional Requirements</h2>
+
+<!-- E1 -->
+<a class="section-anchor" id="e1"></a>
+<h3>E1 — Identity, Tenancy &amp; Access Control</h3>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-101</span>
+    <span class="req-title">Organisation Onboarding</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>The system shall provision a tenant company with branches, users, roles, numbering series, tax registrations, and company profile through a guided wizard with progress tracking and resumability.</p>
+    <div class="ac"><strong>AC:</strong> (1) New tenant completes wizard in ≤30 minutes with sample data optional; (2) all steps resumable after logout; (3) setup checklist persists on home until 100% complete.</div>
+    <div class="tech-note"><strong>TN:</strong> Tenant provisioned via a single <code>POST /tenants</code> API that atomically creates tenant record, default branch, owner-user, and default role assignments in a DB transaction. Wizard state persisted server-side (not localStorage). Onboarding checklist driven by a finite state machine with persisted completion flags per tenant.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-102</span>
+    <span class="req-title">Authentication</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>The system shall support email+password, Google OIDC, and mobile-OTP login; TOTP-based 2FA shall be enforceable per role.</p>
+    <div class="ac"><strong>AC:</strong> (1) All three methods functional per policy; (2) 2FA cannot be bypassed by role; (3) brute-force lockout + alert after 5 failures; (4) Google OIDC redirect round-trip completes in &lt;2s on 4G.</div>
+    <div class="tech-note"><strong>TN:</strong> Auth service issues short-lived access tokens (15-min JWT) + rotating refresh tokens (30-day, stored httpOnly cookie). OTP via SMS (DLT) with 6-digit code, 5-min expiry. TOTP via TOTP-compatible authenticator app (RFC 6238). Brute-force: Redis-backed counter per {email + IP}; lock at 5 failures, notify via email.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-103</span>
+    <span class="req-title">Sessions &amp; Devices</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>The system shall use short-lived access tokens with rotating refresh tokens, configurable idle timeout (default 30 min), device list, and remote revoke.</p>
+    <div class="ac"><strong>AC:</strong> (1) Idle timeout enforced ±60s; (2) refresh rotation invalidates reuse; (3) user can revoke any device from their profile.</div>
+    <div class="tech-note"><strong>TN:</strong> Refresh token family model: reuse of an old token in a family invalidates the entire family (theft detection). Device fingerprint = user-agent + device ID stored hashed. Remote revoke: DELETE /sessions/:id invalidates all tokens in that session's family. Driver app: device binding max 2 devices, self-release with 24h cooldown.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-104</span>
+    <span class="req-title">Role-Based Access Control</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>The system shall enforce granular permissions (≥40 permission keys) across UI and API with deny-by-default; permissions enforced server-side on every request.</p>
+    <div class="ac"><strong>AC:</strong> (1) Permission matrix ≥40 keys enforced server-side; (2) unauthorised API calls return 403 and are audit-logged; (3) UI hides/disables unauthorised actions without client-side bypass.</div>
+    <div class="tech-note"><strong>TN:</strong> Permission matrix stored in DB per role; evaluated at request-handler middleware using a decorator pattern. UI: permission context provided via React context; components conditionally rendered but backend is the enforcement authority. Key permissions include: allot, force-close, price-edit, invoice-issue, supplier-manage-dco, supplier-manage-company, billing, payroll-approve, admin-impersonate. Audit log record on every 403.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-105</span>
+    <span class="req-title">Audit Trail</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>The system shall record actor, action, entity, before/after values, timestamp, IP, and device for every mutation; retained immutably with billing-entity records for 7 years.</p>
+    <div class="ac"><strong>AC:</strong> (1) 100% of mutations produce audit rows in pilot; (2) audit rows have no update/delete code path; (3) per-entity history viewable in &lt;2s for 90-day window.</div>
+    <div class="tech-note"><strong>TN:</strong> Audit log written to an append-only table with trigger-based row-hash chaining (SHA-256 of previous hash + current row). No foreign key cascades that could delete audit rows. Billing-entity audit rows flagged with <code>retention_class='financial'</code> and excluded from standard erasure policies. Separate read replica or columnar store for audit queries at scale.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-106</span>
+    <span class="req-title">Corporate Linked Accounts</span>
+    <span class="badge p1">P1</span><span class="badge v1">V1</span>
+  </div>
+  <div class="req-body">
+    <p>The system shall link vendor tenants to corporate tenants via invitation with expiry, re-invite, and admin replacement.</p>
+    <div class="ac"><strong>AC:</strong> (1) Expired invites re-issuable; (2) admin replaceable without data loss; (3) link/unlink fully audited.</div>
+    <div class="tech-note"><strong>TN:</strong> Link stored as a TenantEdge record (vendor_tenant_id, corporate_tenant_id, status, invited_by, accepted_at). Invitation token: cryptographically random 32-byte hex, stored hashed, 7-day expiry. Re-invite invalidates previous token. Data shared across the edge: rate cards (selective), duty slips (read-only), invoice data.</div>
+  </div>
+</div>
+
+<!-- E2 -->
+<a class="section-anchor" id="e2"></a>
+<h3>E2 — Vendor Masters &amp; Pricing</h3>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-110</span>
+    <span class="req-title">Core Masters</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>The system shall manage customers, suppliers (company/DCO), drivers, vehicles, duty types, vehicle groups, billing items, taxes, labels, branches, banks, and company profiles with active/inactive lifecycle and document/expiry tracking.</p>
+    <div class="ac"><strong>AC:</strong> (1) CRUD + bulk CSV import with dry-run error report; (2) duplicate detection on phone/registration/GSTIN; (3) deactivation blocked where open duties reference the record.</div>
+    <div class="tech-note"><strong>TN:</strong> All master entities implement soft-delete with <code>deleted_at</code> timestamp. Bulk import: CSV streamed through a validation pipeline; dry-run returns row-level errors without DB writes; wet-run uses DB transaction with rollback on fatal errors. Duplicate detection: exact match on normalised phone (E.164), registration number (uppercased, trimmed), GSTIN (15-char exact).</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-111</span>
+    <span class="req-title">Duty Types</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Duty types shall support package km/hours (0.5-hour steps), extra rates, extra modes (sum / higher-of), minimum billing, grace, night windows, day-count rules, fixed-window (FGR) mode, and garage-billing toggles.</p>
+    <div class="ac"><strong>AC:</strong> (1) 0.5-hour packages compute without rounding errors (paise-exact); (2) FGR and higher-of modes covered by in-app worked examples; (3) changes versioned with effective date.</div>
+    <div class="tech-note"><strong>TN:</strong> All money stored as integer paise (int64). 0.5-hour step: stored as integer half-hours to avoid float arithmetic. Duty type versioned via event-sourced snapshot table; allotment always resolves the version effective on duty date. Calculation engine is a pure function: <code>calculateDuty(inputs, dutyType, priceBook) → breakdown</code> — tested with 1,000-case golden suite.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-112</span>
+    <span class="req-title">Price Books</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Pricing versioned by customer × city × duty type × vehicle group with effective dating, bulk clone, and CSV export/import with validation.</p>
+    <div class="ac"><strong>AC:</strong> (1) Overlapping effective dates rejected; (2) clone of 500 rows &lt;30s with error report; (3) duty always prices from version effective on duty date.</div>
+    <div class="tech-note"><strong>TN:</strong> PriceBook table: (tenant_id, customer_id, city_id, duty_type_id, vehicle_group_id, effective_from, effective_to, rates JSONB). Overlap check: DB constraint using exclusion constraint with daterange type. Clone: server-side bulk INSERT with new effective_from; runs async for &gt;100 rows.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-113</span>
+    <span class="req-title">Unpriced-Combination Guard</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Booking/duty creation for combinations without effective pricing shall be blocked by default, bypassable only by explicit permission with mandatory reason, fully logged.</p>
+    <div class="ac"><strong>AC:</strong> (1) Block triggers with message naming the missing combination; (2) bypass requires reason ≥10 chars; (3) bypass logged and appears in daily exception digest.</div>
+    <div class="tech-note"><strong>TN:</strong> Pricing lookup is part of booking creation validation pipeline. If no matching PriceBook row for (customer, city, duty_type, vehicle_group, duty_date), return HTTP 422 with error code <code>UNPRICED_COMBINATION</code>. Bypass: if actor has <code>booking.create.unpriced_override</code> permission and provides reason, create booking with <code>price_override=true</code> flag and audit log entry.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-114</span>
+    <span class="req-title">Allowances &amp; Billing Items</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>System shall support chargeable-to-customer vs payable-to-driver allowance splits and billing items with taxable, driver-addable, mandatory, customer-exclusion, and active flags.</p>
+    <div class="ac"><strong>AC:</strong> (1) Mandatory items enforced identically on dashboard, app, SMS-link, and import paths; (2) missing items listed by name in error; (3) excluded items never appear on customer invoice.</div>
+    <div class="tech-note"><strong>TN:</strong> Billing item enforcement is applied in the shared close-duty service (not at client level). Mandatory items: if not present in submitted slip, return 422 with missing item names. Customer-excluded items: filtered server-side before invoice line generation — never pass to invoice template.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-115</span>
+    <span class="req-title">Document-Expiry Policy</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Documents (licence, RC, insurance, PUC, permit, fitness, police verification) shall carry expiries with T-30/7/1 alerts and per-class allotment policy (hard block / soft warn).</p>
+    <div class="ac"><strong>AC:</strong> (1) Alerts fire on schedule; (2) hard block prevents allotment, names the document; (3) overrides logged with reason.</div>
+    <div class="tech-note"><strong>TN:</strong> Document table: (entity_type, entity_id, doc_class, expiry_date, file_key, status). Scheduled job (daily 06:00 IST) computes T-30/7/1 alerts and inserts into the notification queue. Allotment check: JOIN to active documents; if any hard-block document class is expired for the driver or vehicle, return 422 with document name. Policy configuration (hard/soft) per document class stored in tenant settings.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-116</span>
+    <span class="req-title">Templates &amp; Cloning</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>System shall ship starter templates (airport 4h/40km, 8h/80km, outstation per-km, monthly) and one-click copy of duty types, price books, and invoice presentation across customers.</p>
+    <div class="ac"><strong>AC:</strong> (1) New tenant starts from templates without blank-slate setup; (2) clone preserves rates and effective dates; (3) template library versioned.</div>
+    <div class="tech-note"><strong>TN:</strong> Starter templates stored as seed data in platform config (not per-tenant). On wizard completion, tenant can select templates to apply — a bulk insert into their duty_types and price_books. Template versioning: templates carry a <code>template_version</code> tag; tenant templates track which version they derived from.</div>
+  </div>
+</div>
+
+<!-- E3 -->
+<a class="section-anchor" id="e3"></a>
+<h3>E3 — Bookings &amp; Duties</h3>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-120</span>
+    <span class="req-title">Booking Capture</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Bookings shall capture customer, booker, passengers, city, duty type, vehicle group, reporting datetime/address (geocoded), drop, references (PO/cost-centre), labels, instructions, and source channel.</p>
+    <div class="ac"><strong>AC:</strong> (1) Address autocomplete with map pin confirm; (2) duplicate/similar booking warning (same passenger + overlapping window); (3) all sources land in one inbox with source badge.</div>
+    <div class="tech-note"><strong>TN:</strong> Address geocoding: server-side proxy to Google Places + Geocoding APIs; results cached per (tenant, address_text, precision=6dp) to control API costs. Duplicate detection: query for bookings with same passenger_id + overlapping [reporting_at, reporting_at + estimated_duration] window; return as warning, not block. Source channels tracked: DASHBOARD, MOBILE, SMS_LINK, CSV_IMPORT, API, CORPORATE_APP.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-121</span>
+    <span class="req-title">Booking Lifecycle</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Bookings/duties follow: Draft → Unconfirmed → Confirmed → Unallotted → Allotted → Dispatched → In-Progress → Completed → Billed, with Cancelled/No-Show branches, SLA timers, and guard conditions per transition.</p>
+    <div class="ac"><strong>AC:</strong> (1) Illegal transitions rejected server-side; (2) every transition timestamped + attributed; (3) cancel/no-show requires reason and evaluates charge rules.</div>
+    <div class="tech-note"><strong>TN:</strong> State machine implemented as a service with explicit allowed transitions map. Transition events published to message bus (duty.status_changed). SLA timers: each status has a configurable SLA threshold stored in tenant settings; breach emits a duty.sla_breached event consumed by the alerts service. All transitions append to a duty_timeline table (duty_id, from_status, to_status, actor_id, reason, timestamp).</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-122</span>
+    <span class="req-title">Duties Board</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Kanban + table views with filters, saved views, virtualised scrolling (5,000+ rows), bulk select actions, and command search.</p>
+    <div class="ac"><strong>AC:</strong> (1) 5,000-row roster renders and scrolls at ≥50fps on reference hardware; (2) bulk allot of 100 duties completes &lt;60s with per-row results; (3) views shareable per role.</div>
+    <div class="tech-note"><strong>TN:</strong> Table: cursor-paginated API endpoint returning 50 rows at a time; client-side virtualised scroll (TanStack Virtual) renders only visible rows. Bulk allot: async job via SQS; client polls job status and receives per-row success/failure JSON. Saved views: serialised as (tenant_id, user_id, name, filter_json, column_json) — shareable by generating a view_token.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-123</span>
+    <span class="req-title">Attention Queue</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>System shall surface prioritised exceptions: unallotted &lt;120 min, dispatched-not-started +20 min, tracking silence &gt;45 min, driver far from pickup at T-30, expired docs, missing price, SLA-breach risk.</p>
+    <div class="ac"><strong>AC:</strong> (1) Each rule configurable (threshold, channel, quiet hours); (2) queue shows owner + due + one-click action; (3) digest batching + snooze to prevent alert fatigue.</div>
+    <div class="tech-note"><strong>TN:</strong> Alert rules evaluated by a scheduled processor (runs every 5 min) and by event-triggered handlers (e.g., tracking silence detected by ingest service). Alerts stored in an alerts table with status (open/snoozed/resolved). One-click actions: deep links back to the relevant duty/driver record. Digest: alerts within the same snooze window batched into one notification.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-124</span>
+    <span class="req-title">Allotment</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Allotment assigns exactly one active driver+vehicle or supplier per duty (temporary holds flagged and expirable), showing availability, live location, and compliance state; re-allotment preserves history.</p>
+    <div class="ac"><strong>AC:</strong> (1) Double-allotment impossible via unique active constraint; (2) expired holds auto-release with notice; (3) every allot/change diffed in history.</div>
+    <div class="tech-note"><strong>TN:</strong> Allotment: DB unique constraint on (driver_id, active=true) within a duty's time window. Temporary hold: <code>hold_until</code> timestamp; a scheduled job (runs every 2 min) releases expired holds and emits duty.hold_expired event. Allotment history: append-only allotment_history table. Availability shown by querying active allotments for the duty window.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-125</span>
+    <span class="req-title">Availability Roster</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Shared driver/vehicle day/week roster with blocks, leaves, and maintenance holds that allotment respects.</p>
+    <div class="ac"><strong>AC:</strong> (1) Blocks prevent allotment with explanation; (2) roster supports 500+ resources; (3) changes propagate to open-duty warnings.</div>
+    <div class="tech-note"><strong>TN:</strong> Roster stored as availability_blocks (entity_type, entity_id, block_type, starts_at, ends_at, reason). Allotment check includes a join to availability_blocks. Change propagation: when a block is created, query open allotments in that window and emit duty.availability_conflict event for the attention queue.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-126</span>
+    <span class="req-title">Import &amp; Intake</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Bookings importable via CSV and email-forward parsing with field mapping, dry-run validation, and error quarantine.</p>
+    <div class="ac"><strong>AC:</strong> (1) 1,000-row CSV imports &lt;2 min with row-level errors; (2) quarantined rows fixable inline; (3) import jobs idempotent on retry.</div>
+    <div class="tech-note"><strong>TN:</strong> Import job: CSV uploaded to S3, SQS message triggers worker. Worker processes rows in batches of 50; row-level errors stored in import_job_errors table. Idempotency: each row carries a hash of its content; duplicate hashes within an import job are skipped. Email-forward: inbound email parsed via SendGrid Inbound Parse or AWS SES; field mapping configured per email sender.</div>
+  </div>
+</div>
+
+<!-- E4 -->
+<a class="section-anchor" id="e4"></a>
+<h3>E4 — Duty Slip &amp; Calculation Engine</h3>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-130</span>
+    <span class="req-title">Convergent Close Paths</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Dashboard-manual, driver-app, SMS magic-link, and network-import closes shall execute a single close service with identical validation, calculation, and versioning.</p>
+    <div class="ac"><strong>AC:</strong> (1) Same inputs on all paths produce identical totals (verified by test matrix); (2) magic links single-duty, expiring ≤72h, revocable; (3) network slips accepted read-only until confirmed.</div>
+    <div class="tech-note"><strong>TN:</strong> Single <code>DutyCloseService</code> called from all entry points. Magic link: signed JWT with duty_id and exp=72h; revocable via blocklist in Redis. Network slips: status=PENDING_CONFIRMATION until vendor explicitly confirms, preventing premature billing.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-131</span>
+    <span class="req-title">Deterministic Calculation</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Closing shall compute totals per §7 business rules from effective-dated pricing, with a line-by-line explainable breakdown shown before submit.</p>
+    <div class="ac"><strong>AC:</strong> (1) Preview shows "customer will be billed ₹X" with expandable math; (2) 1,000-case golden calculation suite passes; (3) parallel-run vs pilot history within 0.5%.</div>
+    <div class="tech-note"><strong>TN:</strong> Calculation engine: pure TypeScript/Go function with no side effects. Inputs: start/end datetime, start/end odometer, garage events, duty_type_snapshot (frozen at allotment date), price_book_snapshot (frozen at duty date). Output: CalculationResult with line_items[], subtotal, tax_lines[], total (all int64 paise). Golden suite: 1,000 JSON test cases covering all edge combinations, run in CI on every PR.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-132</span>
+    <span class="req-title">Evidence Pack</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Each slip version shall pin map snapshot, route log, OTP events, signature, odometer/expense photos, and scanned slips; attachments print/download inline with the slip.</p>
+    <div class="ac"><strong>AC:</strong> (1) Single PDF contains slip + attachments in order; (2) missing mandatory proofs block close; (3) evidence immutable per version.</div>
+    <div class="tech-note"><strong>TN:</strong> Evidence files stored in S3; references stored as slip_evidence (slip_version_id, evidence_type, s3_key, uploaded_at, uploaded_by). Immutability: S3 object lock (compliance mode) on finalized slip versions. PDF assembly: server-side PDF generation (PDFKit or Puppeteer) combining slip data and evidence file pre-signed URLs. Evidence required per duty type configurable (mandatory list per duty_type).</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-133</span>
+    <span class="req-title">Auto-Switch &amp; FGR</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Optional auto-switch of duty type to best-fit package (logged) and fixed-window (FGR) billing supported per customer/duty-type.</p>
+    <div class="ac"><strong>AC:</strong> (1) Switch shows delta before confirm (or auto per policy + post-hoc notice); (2) FGR bills fixed window while recording actuals for audit.</div>
+    <div class="tech-note"><strong>TN:</strong> Auto-switch: calculation engine computes billing for all applicable packages and returns the cheapest (or most appropriate per policy). Switch logged with before/after duty_type_id and billing delta. FGR: <code>billing_mode=FIXED_WINDOW</code>; actual KM/time recorded in actuals_km, actuals_hr columns but billing uses fixed_km, fixed_hr from duty type configuration.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-134</span>
+    <span class="req-title">Supervisor Correction</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Force-close and post-completion edits require permission + reason, create new versions, and notify affected parties.</p>
+    <div class="ac"><strong>AC:</strong> (1) No silent-edit path exists; (2) version diff viewable; (3) customer-visible documents regenerate from latest confirmed version only.</div>
+    <div class="tech-note"><strong>TN:</strong> DutySlip versioned: slip_versions table (slip_id, version, data JSONB, created_by, reason, created_at). Current version tracked via slip.current_version_id. Invoice PDFs generated from current slip version on demand; cached version invalidated on new slip version. Diff: JSON diff between version N-1 and version N stored in slip_version_diff table.</div>
+  </div>
+</div>
+
+<!-- E5 (Summary) -->
+<a class="section-anchor" id="e5"></a>
+<h3>E5 — Billing, E-Invoicing, Receipts &amp; Collections</h3>
+
+<table>
+  <tr><th>FR</th><th>Requirement</th><th>Priority</th><th>Key Technical Note</th></tr>
+  <tr><td>FR-140</td><td>Invoice builder — single, consolidated (≤10K lines), proforma; async build with progress notification</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Async SQS worker; progress via WebSocket; invoice lines streamed to temp table then atomically committed. Immutable on issue; credit/debit note workflow for corrections.</td></tr>
+  <tr><td>FR-141</td><td>Tax / entity selection (CGST/SGST vs IGST by state of supply), letterheads, tamper seal</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>State-of-supply logic: compare vendor GSTIN state vs customer billing address state. Tamper seal: HMAC of invoice data embedded in PDF metadata; broken on any post-issue modification attempt.</td></tr>
+  <tr><td>FR-142</td><td>Dispatch via email/WhatsApp/link; delivery tracking; rejection intake</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Dispatch events stored in invoice_dispatch_log. Rejection: structured intake form (reason enum + free text); routes to billing queue as dispute record.</td></tr>
+  <tr><td>FR-143</td><td>GST-linked credit/debit notes referencing original invoice</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Note cannot exceed original line values without explicit maker-checker approval. Linkage: foreign key to original invoice; GST recomputed from scratch on note.</td></tr>
+  <tr><td>FR-144</td><td>Receipts + allocation (advance, on-account, against-invoice); FIFO-auto or manual; bulk bank-statement matching</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Double-allocation prevented by DB unique constraint on (receipt_id, invoice_id). Statement matching: fuzzy amount + date match, presented as suggestions requiring human confirm.</td></tr>
+  <tr><td>FR-145</td><td>Payment links with expiry/reminders; gateway checkout (primary + fallback); idempotent webhooks; auto-receipt</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Idempotency: gateway webhook processed once via Redis SET NX on payment reference. Receipt created in transaction with payment confirmation.</td></tr>
+  <tr><td>FR-146</td><td>E-invoicing: IRN/QR generation, cancellation within statutory window, error surfacing</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>GSP integration via async queue; IRN stored on invoice record; cancelled IRNs cannot be reprinted without new IRN. Sandbox daily regression suite.</td></tr>
+  <tr><td>FR-147</td><td>Tally XML + Zoho Books API sync for parties, invoices, receipts, notes</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Sync state machine per record: PENDING → SYNCED / FAILED. Retry with exponential backoff. Conflict resolution: manual override via mapping UI.</td></tr>
+  <tr><td>FR-148</td><td>Dunning and auto-collect: card mandate, pre-debit notices, smart retries</td><td><span class="badge p2">P2</span> <span class="badge v2">V2</span></td><td>NACH mandate via Razorpay; pre-debit notice 3 days prior per RBI guidelines; retry schedule: T+1, T+4, T+7.</td></tr>
+</table>
+
+<!-- E6 -->
+<a class="section-anchor" id="e6"></a>
+<h3>E6 — Purchase, Supplier &amp; Fleet Cost</h3>
+
+<table>
+  <tr><th>FR</th><th>Requirement</th><th>Priority</th><th>Key Technical Note</th></tr>
+  <tr><td>FR-150</td><td>Purchase duties board: estimated revenue vs supplier cost vs margin; supplier invoice intake</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Margin computed as (sale_price - purchase_price) / sale_price; stored denormalised for board performance; recalculated on slip or price change event.</td></tr>
+  <tr><td>FR-151</td><td>Three-way match: executed slip vs supplier bill vs our sale; tolerance-based auto-accept; payables aging</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Tolerance configurable per customer/supplier. Match status: AUTO_ACCEPTED, MANUAL_REVIEW, BLOCKED. Payables aging: computed from supplier_invoice.due_date; buckets: current, 0–30, 31–60, 61–90, 90+ days.</td></tr>
+  <tr><td>FR-152</td><td>Supplier portal: view allotted/completed duties, upload slips/invoices, track payment status</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Separate portal subdomain; scoped JWT; supplier sees only tenant-scoped duties where they are the assigned supplier. File uploads: virus scan via ClamAV before processing.</td></tr>
+  <tr><td>FR-153</td><td>Driver payroll-lite: per-duty earnings + salary + advances + deductions → payout sheets</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Payout sheet: aggregate of duty_earnings + salary_components - deductions. Approval chain: configurable multi-level approval before payment. Advance recovery: rule engine per driver contract.</td></tr>
+  <tr><td>FR-154</td><td>Petty cash + vehicle costing: digital cash book, fuel/expense/EMI, mileage, per-vehicle P&amp;L</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Cash book: double-entry ledger model (debit/credit). Vehicle P&amp;L: allocate duty earnings to vehicle; subtract fuel, maintenance, EMI entries. Fuel entries support photo proof stored in S3.</td></tr>
+  <tr><td>FR-155</td><td>Feedback: custom forms auto-sent on completion, ratings dashboard, issue routing</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Form trigger: duty.completed event → delayed message (configurable delay). Low-score threshold configurable; breach triggers alert to fleet owner.</td></tr>
+</table>
+
+<!-- E7 -->
+<a class="section-anchor" id="e7"></a>
+<h3>E7 — Corporate Module</h3>
+
+<table>
+  <tr><th>FR</th><th>Requirement</th><th>Priority</th><th>Key Technical Note</th></tr>
+  <tr><td>FR-160</td><td>Corporate structure: regions, cost centres, designation profiles, employees (CSV/HRMS import), booker/passenger/approver separation</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>HRMS import via SFTP or REST webhook (configurable per corporate). 5K-employee async import with row-level errors. Self-registration closed by default; invite-only or allowlist domain.</td></tr>
+  <tr><td>FR-161</td><td>Booking policy: profile-based entitlements enforced inline at request time</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Policy engine: rule tree evaluated at booking creation time. Out-of-policy result: BLOCKED or ESCALATE_FOR_APPROVAL per rule. Policy explanation stored on booking for transparency.</td></tr>
+  <tr><td>FR-162</td><td>Approvals: multi-level chains, amount thresholds, auto-approve, delegation, SLA timers, nudges, escalation</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Approval chain: DAG of approval nodes (any/all). SLA timer per node; on breach: escalate to next node or auto-approve per policy. Delegation: time-bounded, revocable; auto-revoke on expiry.</td></tr>
+  <tr><td>FR-163</td><td>Vendor management: rule-based allocation, scorecards from SLA/acceptance/rating/incident data</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Allocation rules evaluated in priority order: rate rank, zone match, score threshold, round-robin. Score: weighted composite recomputed daily by scheduled job. Explainer: allocation decision stored with rule-evaluation trace.</td></tr>
+  <tr><td>FR-164</td><td>Corporate trip board: live view across vendors, tracking, proofs, OTP evidence, SLA state</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Read-only view across corporate's linked vendor tenants. Live tracking via WebSocket subscription to tracking events filtered by corporate's trips. SLA breach flags propagated from vendor's duty state machine.</td></tr>
+  <tr><td>FR-165</td><td>Invoice verification: auto-verification vs contract rates, KM/time tolerances, duplicate detection, proof completeness</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Verification engine: rule-based checker producing verdict (AUTO_ACCEPT / REVIEW / AUTO_FLAG) with rule citations. Target: ≥70% auto-accept in pilot with zero false-accepts. Tolerances configurable per vendor.</td></tr>
+  <tr><td>FR-166</td><td>Payables, budgets, forecasts, emissions summary</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Budget burn: real-time running total vs budget per cost centre. Forecast: rolling 90-day average of actuals. Emissions: kg CO₂ per KM factor table (source: MoEFCC); versioned and cited in UI.</td></tr>
+  <tr><td>FR-167</td><td>Cancellation and no-show: per-duty-type cutoff, charge matrices, driver wait evidence</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Late-cancel charge computed from cutoff matrix. No-show: requires driver to upload wait log + photo; if missing, no-show charge blocked. Employee notified of charge with reason before application.</td></tr>
+</table>
+
+<!-- E8 -->
+<a class="section-anchor" id="e8"></a>
+<h3>E8 — Driver Mobile App</h3>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-170</span>
+    <span class="req-title">Access &amp; Onboarding</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Mobile-OTP login with device binding (max 2), language picker (8 languages), permission coach, OEM battery-exemption guide, and practice duty.</p>
+    <div class="ac"><strong>AC:</strong> (1) First-time login completes within 3 min; (2) language selection persists across reinstalls; (3) battery exemption guide covers top 10 OEM skins by India market share.</div>
+    <div class="tech-note"><strong>TN:</strong> Language preference stored server-side (not device-only) so it persists on reinstall. Battery exemption guide: deep-link to OEM settings where possible (Xiaomi, Samsung, Realme, Vivo, Oppo, OnePlus, Motorola, Nokia); fallback to illustrated step-by-step. Practice duty: sandbox duty that exercises all app flows without affecting production data.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-171</span>
+    <span class="req-title">Duty List &amp; Detail</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Duty list with upcoming/active/completed sections; duty detail with all booking information, address deep-links, and pre-fetched for offline access.</p>
+    <div class="ac"><strong>AC:</strong> (1) Duty detail available offline within 30 min of allotment; (2) address taps open Maps navigation; (3) list refresh on push notification.</div>
+    <div class="tech-note"><strong>TN:</strong> Offline: duty details pre-fetched and stored in WatermelonDB (SQLite) on allotment push notification. Address deep-link: <code>geo:</code> URI for Maps navigation. Push-triggered refresh: FCM data message triggers a background sync without requiring user interaction.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-172</span>
+    <span class="req-title">Start Duty</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Start duty captures reporting location (GPS), odometer (manual + optional photo), reporting OTP (V1), and initiates background tracking.</p>
+    <div class="ac"><strong>AC:</strong> (1) Start confirmed to server or queued for sync within 5s of tap; (2) GPS accuracy &lt;50m required or warned; (3) tracking initiated even if confirmation is delayed by poor connectivity.</div>
+    <div class="tech-note"><strong>TN:</strong> Offline-first: start event written to local WatermelonDB immediately; background sync queue retries until acknowledged by server. GPS: minimum accuracy threshold configurable; accuracy and battery level stored with each point. Tracking: background location service using platform APIs (Foreground Service on Android, Background Location on iOS); foreground notification persistent while duty is active — this directly addresses Indecab Go's GPS failure mode.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-173</span>
+    <span class="req-title">In-Duty Tracking &amp; Expenses</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Background GPS batching (configurable interval: 30s default), expense add (toll/parking/other + photo), fuel entry, and connectivity-resilient sync.</p>
+    <div class="ac"><strong>AC:</strong> (1) GPS points queued locally during offline periods and synced with gap annotation on reconnect; (2) expense photos uploaded async without blocking duty flow; (3) no fabricated points (interpolated points marked).</div>
+    <div class="tech-note"><strong>TN:</strong> GPS batch: local SQLite buffer; flush when ≥10 points or 60s elapsed or connectivity restored. Gap annotation: if gap between last known point and reconnect point &gt;5 min, both endpoints tagged with gap_type='connectivity'. Photo upload: separate upload queue; slip close not blocked by pending photo uploads but uploads must complete before slip is finalised. Interpolated points marked with <code>source='interpolated'</code> — direct fix for Indecab Go's GPS accuracy issue.</td></tr></div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-174</span>
+    <span class="req-title">Stop Duty</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Stop duty captures drop location (GPS), odometer, end OTP (V1), digital signature, and presents calculation preview before final submit.</p>
+    <div class="ac"><strong>AC:</strong> (1) Stop available offline and syncs on reconnect without hang; (2) calculation preview shown before submit; (3) final submit idempotent (retry safe).</div>
+    <div class="tech-note"><strong>TN:</strong> Stop duty: event written locally first; server submission with idempotency key = duty_id + 'stop'. Retry logic: exponential backoff, max 5 retries, then escalate to attention queue. This directly addresses Indecab Go's "stop duty hang requiring cache clear" bug — state is never dependent on a synchronous server response before the local state transition. Calculation preview: computed locally from cached duty type + price book (synced at allotment); server validates and may adjust on submission.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-175–FR-182</span>
+    <span class="req-title">SOS, Live Share, OTP, Post-Trip (Summary)</span>
+    <span class="badge p1">P1</span><span class="badge v1">V1</span>
+  </div>
+  <div class="req-body">
+    <table>
+      <tr><th>FR</th><th>Feature</th><th>Technical Note</th></tr>
+      <tr><td>FR-175</td><td>OTP start/stop: passenger-delivered codes; supervisor override</td><td>OTP: 6-digit, 10-min expiry, max 3 resends, 5-min resend cooldown. Override: permission-gated, requires reason + evidence note. OTP events stored in duty_otp_events.</td></tr>
+      <tr><td>FR-176</td><td>SOS: single-tap distress; 3-channel delivery (push + SMS + WhatsApp) to configured contacts</td><td>SOS always visible as FAB during active duty. Delivery via 3 parallel channels; delivery receipts stored. SOS button non-dismissable during active trip.</td></tr>
+      <tr><td>FR-177</td><td>Live share: tokenised link with expiry, revoke, view count</td><td>Token: 32-byte random, stored hashed, 24h expiry default. Revoke: Redis blocklist, effective in &lt;5s. View count: Redis INCR on each access.</td></tr>
+      <tr><td>FR-178</td><td>Masked calling: click-to-call from app; no separate dialer app required</td><td>Native SDK integration (Exotel/Knowlarity) — no separate app install, directly addressing Indecab's Indecall anti-pattern. Call log stored on duty timeline. Recording retention per policy.</td></tr>
+      <tr><td>FR-182</td><td>Post-trip: history, slips, approve/reject with reason, rating with issue tags</td><td>Rating prompt: sent via push 10 min after duty completion, respects quiet hours (22:00–07:00 IST).</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- E9 - NEW section not in original PRD -->
+<a class="section-anchor" id="e9"></a>
+<h3>E9 — Passenger App <span class="badge new">Gap-Filled</span></h3>
+
+<div class="gap-note"><strong>GAP IDENTIFIED:</strong> The original PRD referenced the passenger app (U7) in personas and release strategy but had no dedicated epic with FRs. The corporate app is Indecab's weakest surface (5K downloads, auth failures). This is a major competitive opportunity — addressed here.</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-185</span>
+    <span class="req-title">Passenger Authentication &amp; Onboarding</span>
+    <span class="badge p1">P1</span><span class="badge v1">V1</span>
+  </div>
+  <div class="req-body">
+    <p>Company-email-based authentication via corporate SSO (OIDC/SAML) or invite-code login; no manual registration without company admin action.</p>
+    <div class="ac"><strong>AC:</strong> (1) SSO login completes &lt;5s round-trip; (2) invite-code auth works without SSO; (3) unauthenticated users see clear "contact your admin" message, not a blank error.</div>
+    <div class="tech-note"><strong>TN:</strong> SSO via OIDC: redirect flow; token exchanged for platform JWT. Invite-code: 8-char alphanumeric, single-use, 48h expiry, sent to corporate email. This fixes Indecab Corporate's "daily login failure" issue by supporting SSO as primary auth rather than username/password only.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-186</span>
+    <span class="req-title">Booking Request</span>
+    <span class="badge p1">P1</span><span class="badge v1">V1</span>
+  </div>
+  <div class="req-body">
+    <p>Employee can request a ride with pickup/drop, date/time, purpose, cost centre — inline policy check and approval routing without leaving the app.</p>
+    <div class="ac"><strong>AC:</strong> (1) Booking submitted in ≤3 taps from home screen; (2) policy result shown inline before submission; (3) approval status visible with timeline.</div>
+    <div class="tech-note"><strong>TN:</strong> Policy check: synchronous call to corporate policy engine at submission time. Approval: WebSocket subscription to approval_events for real-time status. Push notification on approval/rejection.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-187</span>
+    <span class="req-title">Trip Tracking &amp; Safety</span>
+    <span class="badge p1">P1</span><span class="badge v1">V1</span>
+  </div>
+  <div class="req-body">
+    <p>Live driver tracking, OTP delivery to passenger for start/stop, emergency SOS, share-with-family link.</p>
+    <div class="ac"><strong>AC:</strong> (1) Driver location visible within 60s of duty start; (2) OTP generation and display on passenger app; (3) share link sends via native share sheet.</div>
+    <div class="tech-note"><strong>TN:</strong> Tracking: passenger app subscribes to a tokenised WebSocket channel for the duty's tracking events. OTP: generated server-side, pushed to passenger app via FCM, never stored in client-readable storage beyond display.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-188</span>
+    <span class="req-title">Trip History &amp; Ratings</span>
+    <span class="badge p1">P1</span><span class="badge v1">V1</span>
+  </div>
+  <div class="req-body">
+    <p>Past trips with route history, slip preview, cost centre charge confirmation, and post-trip rating with issue tags.</p>
+    <div class="ac"><strong>AC:</strong> (1) Route history viewable on a map for each trip; (2) rating submitted within 10 min of prompt; (3) cost centre charge visible on trip detail.</div>
+    <div class="tech-note"><strong>TN:</strong> Route history: rendered from trip's track_points stored in TimescaleDB; passenger-visible route uses address-enriched waypoints only (not raw GPS). Slip preview: PDF served via pre-signed S3 URL, 1h expiry.</div>
+  </div>
+</div>
+
+<!-- E10 -->
+<a class="section-anchor" id="e10"></a>
+<h3>E10 — Tracking &amp; Alerts</h3>
+
+<table>
+  <tr><th>FR</th><th>Requirement</th><th>Priority</th><th>Key Technical Note</th></tr>
+  <tr><td>FR-190</td><td>Ingest and reconstruction: gap-tolerant route reconstruction, health states</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Ingest service: dedicated microservice accepting batch POST of GPS points. Bulk insert to TimescaleDB hypertable (tenant_id, duty_id, recorded_at). Gap detection: any interval &gt;5 min between consecutive points flagged. Reconstruction: straight-line interpolation marked as synthetic. Health states: LIVE (last point &lt;2 min), PAUSED (2–10 min), GAP (&gt;10 min).</td></tr>
+  <tr><td>FR-191</td><td>Live share: tokenised links, expiry, revoke, view count</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>See FR-177 for token mechanics. Shared link renders a lightweight web page (no app required) with auto-refreshing map. View count via Redis INCR, forwarding risk notice shown on first view.</td></tr>
+  <tr><td>FR-192</td><td>Alert rules: stoppage, overspeed, idle-billing risk, geo-fence, silence gap</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Rules evaluated by ingest service stream processor. Geo-fence: polygon stored as PostGIS geometry; ST_Contains check per point. Alert lifecycle: open → acknowledged → resolved. False-positive tuning: precision/recall dashboard per rule per tenant.</td></tr>
+  <tr><td>FR-193</td><td>Route logs: address-enriched with server-side place caching</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Reverse geocoding via Google Geocoding API; results cached in Redis (key: lat_lon_rounded_4dp) with 30-day TTL. Toggle per customer. Target: ≥60% cache hit rate in steady state.</td></tr>
+  <tr><td>FR-194</td><td>Hardware GPS ingest: third-party device feeds stitched with app tracks</td><td><span class="badge p2">P2</span> <span class="badge v2">V2</span></td><td>Documented ingest protocol (REST + MQTT options). Source tagged per point (APP / HARDWARE). Duplicate point deduplication within 5s window. Device health monitoring via heartbeat events.</td></tr>
+</table>
+
+<!-- E11 -->
+<a class="section-anchor" id="e11"></a>
+<h3>E11 — Communications &amp; Telephony</h3>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-200</span>
+    <span class="req-title">Template Studio</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>SMS/email/WhatsApp templates with namespaced variables, linting, preview, per-customer overrides, and per-event channel matrix with toggles.</p>
+    <div class="ac"><strong>AC:</strong> (1) Unknown variables fail validation with suggestion; (2) test-send to seed numbers; (3) every automated send has an off switch.</div>
+    <div class="tech-note"><strong>TN:</strong> Template variables: <code>{{namespace.field}}</code> syntax; linted at save time against known variable registry. WhatsApp: approved BSP templates stored with template_id; variable substitution only in approved variable positions. Each event type has a channel_config (SMS: on/off, WhatsApp: on/off, email: on/off, push: on/off) per tenant, overridable per customer.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-201</span>
+    <span class="req-title">Delivery &amp; Compliance</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Provider failover, delivery log, DLT sender/template onboarding tracker; brand masking included in plan (no add-on).</p>
+    <div class="ac"><strong>AC:</strong> (1) Failover on provider error &lt;60s; (2) 30-day delivery rate ≥97%; (3) brand masking never paywalled.</div>
+    <div class="tech-note"><strong>TN:</strong> Provider abstraction layer: <code>SmsProvider</code> interface with Kaleyra and Gupshup implementations; failover via circuit breaker (5 failures in 30s triggers switch). Delivery log: message_events table (message_id, provider, status, delivered_at, error_code). DLT tracker: manage DLT header IDs and template registration status per provider in platform config.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-202</span>
+    <span class="req-title">Masked Calling (Native — No Separate App)</span>
+    <span class="badge p1">P1</span><span class="badge v1">V1</span>
+    <span class="badge gap">Competitive Gap vs Indecab</span>
+  </div>
+  <div class="req-body">
+    <p>Click-to-call with number masking, consent + recording disclosure, and call entries on the duty timeline. No separate dialer app required.</p>
+    <div class="ac"><strong>AC:</strong> (1) Real numbers never exposed to counterparties; (2) unanswered-call retries logged; (3) recordings retained per policy with access control; (4) no app install required beyond core platform apps.</div>
+    <div class="tech-note"><strong>TN:</strong> Integration via Exotel or Knowlarity API (not Indecab's "install a separate app" pattern). Web console: click-to-call button triggers API call that bridges the two parties. Driver app: in-app call via SDK bridge. Call events stored in duty_call_log (duty_id, caller_type, callee_type, duration, recording_key, timestamp). Recording: S3 storage, access restricted to supervisor+ roles, 90-day retention default.</div>
+  </div>
+</div>
+
+<!-- E12 -->
+<a class="section-anchor" id="e12"></a>
+<h3>E12 — Reports &amp; Analytics</h3>
+
+<table>
+  <tr><th>FR</th><th>Requirement</th><th>Priority</th><th>Key Technical Note</th></tr>
+  <tr><td>FR-210</td><td>Standard reports: roster, sales, collections/aging, driver, vehicle, duty P&amp;L, SLA exceptions</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Reports run against read replica to prevent OLTP impact. 100K-row CSV export: async job, S3 presigned URL delivered via in-app notification + email. Every number drills to source rows via filter preset.</td></tr>
+  <tr><td>FR-211</td><td>Custom exports: saved column sets, filter presets, permission-aware rows</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Column selection stored per user/view. Permission-aware: row-level security enforced at DB query level, not filtered post-query. Async export: jobs queued in SQS, completed files available for 7 days.</td></tr>
+  <tr><td>FR-212</td><td>Report builder: drag-and-drop, saved views, scheduled distribution</td><td><span class="badge p2">P2</span> <span class="badge v2">V2</span></td><td>Queries time-boxed at 30s; background execution for longer queries with progress notification. Certified vs ad-hoc labelling for governance. Scheduler: cron expression stored per report; executed by job processor.</td></tr>
+</table>
+
+<!-- E13 -->
+<a class="section-anchor" id="e13"></a>
+<h3>E13 — Network &amp; Settlements (V2)</h3>
+
+<table>
+  <tr><th>FR</th><th>Requirement</th><th>Priority</th><th>Key Technical Note</th></tr>
+  <tr><td>FR-220</td><td>Associate graph: directory, invite/accept, selective rate-card sharing, duty push with bid/accept, real-time slip sync</td><td><span class="badge p2">P2</span> <span class="badge v2">V2</span></td><td>Associate graph: network_edges table (from_tenant, to_tenant, trust_level, cities, active). Duty push: separate duty_offer record; bid/accept state machine. Shared data minimised to need-to-know (rate cards: only shared duty types; slip: read-only view).</td></tr>
+  <tr><td>FR-221</td><td>Trust and settlement: trust scores, settlement ledger, evidence-locked disputes</td><td><span class="badge p2">P2</span> <span class="badge v2">V2</span></td><td>Trust score: composite of completion_rate × acceptance_rate × payment_timeliness × rating_avg. Formula published in UI. Disputes: freeze only the disputed duty's settlement amount; rest of settlement proceeds. Settlement statements exportable as CSV/PDF.</td></tr>
+</table>
+
+<!-- E14 -->
+<a class="section-anchor" id="e14"></a>
+<h3>E14 — Platform Admin Console</h3>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-230</span>
+    <span class="req-title">Admin Access &amp; Staff RBAC</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>Separate admin console with SSO-enforced staff login, internal roles, deny-by-default permissions, and maker-checker on money/status actions.</p>
+    <div class="ac"><strong>AC:</strong> (1) Staff SSO mandatory; no shared accounts; (2) maker-checker enforced on refunds, credits, suspension, plan overrides; (3) every admin action attributed in audit with ticket reference.</div>
+    <div class="tech-note"><strong>TN:</strong> Admin console: separate React app on admin.{domain}; separate JWT issuer with admin_role claims. No cross-contamination with tenant tokens. Maker-checker: pending_actions table; checker must be a different authenticated user with appropriate role. Impersonation: requires open support ticket ID, logged with full session actions, bannered to impersonator in every page header.</div>
+  </div>
+</div>
+
+<table>
+  <tr><th>FR</th><th>Requirement</th><th>Priority</th><th>Key Technical Note</th></tr>
+  <tr><td>FR-231</td><td>Admin dashboard: platform KPIs with drill-down</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>KPIs computed from materialised views refreshed every 5 min. Finance vs support views permission-scoped at view level. Every KPI tile links to filtered record list.</td></tr>
+  <tr><td>FR-232</td><td>Client registry: onboarding, GSTIN/PAN, status workflow (lead → trial → active → suspended → churned)</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Status FSM with permission-gated transitions. GSTIN validation: 15-char format check + duplicate check. Onboarding checklist: per tenant type (fleet vs corporate), SLA timers on each step.</td></tr>
+  <tr><td>FR-233</td><td>Client 360°: KYC, users, drivers, cabs, subscription, dues, usage, tickets, health score</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Profile loads ≤2s with lazy-loaded tabs. Health score: composite of usage_trend + payment_timeliness + support_ticket_rate + activation_completeness. Formula documented in-app.</td></tr>
+  <tr><td>FR-234</td><td>Vendor registry: client linkages, fleet, compliance, performance</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Vendor↔client linkage graph queryable. Compliance expiry alerts scheduled daily. Underperformance flags: configurable thresholds per metric.</td></tr>
+  <tr><td>FR-235</td><td>Driver registry: cross-tenant directory, identity, documents, platform blocks with appeal</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Privacy: PII fields (phone, aadhaar, address) masked for read-only auditor role; access logged. Block: reason + appeal URL sent to driver via SMS. Appeal: creates support ticket linked to driver block record.</td></tr>
+  <tr><td>FR-236</td><td>Cab registry: cross-tenant vehicle directory, cab-type library</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Registration unique platform-wide: unique index on normalised registration_number. Ownership changes: journaled in vehicle_ownership_history. Cab-type library: platform-managed with icons; changes propagate to eligible duty-type mappings with tenant notification.</td></tr>
+  <tr><td>FR-237</td><td>User directory: cross-tenant search, lock/unlock, impersonation</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Search p95 &lt;1s at 100K users via trigram index on name + email. Lock: Redis session invalidation + DB flag; effective ≤60s. Impersonation: requires open ticket, generates impersonation_token scoped to ticket, all actions logged under original actor + impersonation context.</td></tr>
+  <tr><td>FR-238</td><td>Subscriptions and plans: plan catalogue, trials, usage metering, overage, renewals</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Metering: completed duty count and tracking-day count from duty ledger ±0. Mid-cycle changes prorated by day. Renewal reminder: T-14/7/3/1 automated emails.</td></tr>
+  <tr><td>FR-239</td><td>Tenant billing and payments: invoices, gateway transactions, receipts, collection dashboard</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Idempotency: gateway webhooks processed via Redis SET NX on payment reference. Invoice → transaction → receipt chain: bidirectional navigation. Daily reconciliation report: auto-generated at 23:00 IST.</td></tr>
+  <tr><td>FR-240</td><td>Dues, dunning, credits, refunds; maker-checker above threshold</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Dunning sequences: configurable per tenant segment (startup/growth/enterprise). Every credit/refund linked to reason + ticket ID. Threshold for maker-checker: configurable by finance admin (default ₹10,000).</td></tr>
+  <tr><td>FR-241</td><td>Operational oversight: cross-tenant read-only views, dispute interventions</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>All oversight actions notify affected tenant via in-app + email. Dispute FSM: open → investigating → resolved → closed. SLA timers per priority. No silent mutation path.</td></tr>
+  <tr><td>FR-242</td><td>Support ticketing: intake, categorisation, SLA, assignment, escalation, CSAT, linkage to records</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>SLA clocks per priority (P1: 1h, P2: 4h, P3: 24h). Macros: saved response templates with variable substitution. CSAT: sent 24h after ticket resolution. Every ticket must link to ≥1 operational record.</td></tr>
+  <tr><td>FR-243</td><td>Audit and access monitoring: unified audit search, saved investigations, anomaly flags</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Audit query p95 &lt;2s over 90-day window via columnar index on (tenant_id, entity_type, created_at). Anomaly rules: off-hours bulk export, repeated impersonation, mass status changes — stored in anomaly_rules table, configurable thresholds. Exports watermarked with actor + timestamp in PDF footer.</td></tr>
+  <tr><td>FR-244</td><td>Platform analytics and MIS: tenant growth, revenue/MRR, collections/DSO, usage, support load, churn signals</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>KPI definitions documented in-app (no black-box metrics). Churn signal: usage_velocity × payment_delay × support_ticket_spike, reviewed monthly for false-positive calibration. Scheduled packs: cron-driven report jobs, delivery miss rate &lt;0.1%.</td></tr>
+  <tr><td>FR-245</td><td>Feature flags and announcements: tenant/user-targeted flags, kill switch, scheduled banners</td><td><span class="badge p0">P0</span> <span class="badge mvp">MVP</span></td><td>Feature flags via LaunchDarkly or in-house (Redis-backed). Kill effective ≤60s. Percentage rollout: deterministic bucketing by tenant_id hash. Announcements targetable by plan/segment/cohort.</td></tr>
+  <tr><td>FR-246</td><td>Platform configuration: cab-type library, duty-type templates, pricing starter packs, notification templates</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Config versioned with semantic version tag. Rollout: staged to pilot tenants first (feature flag gated). Tenant overrides preserved on library update — override comparison shown to admin.</td></tr>
+  <tr><td>FR-247</td><td>Privacy centre: DSAR export/delete, retention policies, consent receipts, DPA support</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>DSAR export: ≤24h; erasure: ≤72h with legal-hold exceptions itemised. Erasure verification: audit log entry with hash of deleted records. DPA generation: templated PDF with tenant data filled programmatically.</td></tr>
+  <tr><td>FR-248</td><td>Network moderation: associate verification, trust interventions, dispute adjudication</td><td><span class="badge p2">P2</span> <span class="badge v2">V2</span></td><td>Action ladder: warn → limit → suspend, each with evidence links in audit. Appeal: creates reversal ticket with SLA. All actions audited.</td></tr>
+  <tr><td>FR-249</td><td>Tenant suspension and offboarding: graceful suspend, data export, purge on retention expiry, reactivation</td><td><span class="badge p1">P1</span> <span class="badge v1">V1</span></td><td>Suspended tenant: read-only mode + data export access for 30 days. Purge: scheduled job with pre-purge verification query; certified by admin sign-off + audit record. Reactivation: restore within RTO (≤30 min).</td></tr>
+</table>
+
+<!-- E15 - NEW EPIC -->
+<a class="section-anchor" id="e15"></a>
+<h3>E15 — Offline-First Architecture &amp; Resilience <span class="badge new">New Epic</span></h3>
+
+<div class="gap-note"><strong>GAP IDENTIFIED:</strong> The original PRD mentioned offline tolerance as a goal and in UX notes but had no dedicated functional requirements defining the offline contract, sync protocol, or conflict resolution. This is a critical gap given that Indecab Go's most-reported failures are connectivity-related. This epic makes the offline contract explicit and testable.</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-250</span>
+    <span class="req-title">Offline Data Contract</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>The driver app shall remain fully functional for active duties during complete network loss of up to 4 hours, with no data loss or stuck-state on reconnect.</p>
+    <div class="ac"><strong>AC:</strong> (1) Start duty, add expenses, add GPS points, stop duty all work with zero connectivity; (2) on reconnect, all queued actions sync in order within 30s; (3) sync never requires a cache-clear or app restart.</div>
+    <div class="tech-note"><strong>TN:</strong> Local DB: WatermelonDB (SQLite) for structured duty data; GPS points: separate SQLite table with auto-increment. Sync queue: operations serialised as JSON with timestamp + idempotency key; retry processor with exponential backoff. Conflict resolution: server-authoritative for pricing calculations; local-authoritative for GPS points (server appends, never overwrites). Stuck-state protection: no UI state depends on a pending server response — all transitions write locally first.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-251</span>
+    <span class="req-title">Pre-fetch Strategy</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>The app shall pre-fetch and cache duty details, customer information, pricing data, and map tiles for upcoming duties within 30 minutes of allotment.</p>
+    <div class="ac"><strong>AC:</strong> (1) All duty detail available offline within 30 min of allotment; (2) cache invalidated and refreshed if duty details change; (3) map tile cache covers ±10km radius of reported address.</div>
+    <div class="tech-note"><strong>TN:</strong> Pre-fetch trigger: FCM data message on allotment → background sync. Cache scope: duty record, customer info, pricing snapshot, driver type snapshot, map tiles (offline tiles via Google Maps SDK offline regions or Mapbox). Invalidation: if duty is re-allotted or booking details change, fresh FCM data message triggers cache refresh.</div>
+  </div>
+</div>
+
+<div class="req">
+  <div class="req-header">
+    <span class="req-id">FR-252</span>
+    <span class="req-title">Web Console Resilience</span>
+    <span class="badge p0">P0</span><span class="badge mvp">MVP</span>
+  </div>
+  <div class="req-body">
+    <p>The web console shall display meaningful degraded states during API latency spikes or partial outages; critical actions (allotment, invoice issue) shall be queued for retry, not silently dropped.</p>
+    <div class="ac"><strong>AC:</strong> (1) API timeout &gt;5s shows an inline retry, not a white screen; (2) failed allotment shows error reason + retry button; (3) async jobs (invoice builds, imports) show progress and complete even if the browser tab is closed.</div>
+    <div class="tech-note"><strong>TN:</strong> TanStack Query: stale-while-revalidate for reads; optimistic updates with rollback for mutations. Async jobs: job_id returned immediately; progress via WebSocket or polling. Jobs stored server-side with completion status; notification delivered on completion regardless of browser state.</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 6 ===== -->
+<a class="section-anchor" id="s6"></a>
+<h2>6. Key User Journeys</h2>
+
+<h3>J1 · Dispatcher — Morning Rush (30 Duties, 2 Hours)</h3>
+<ol>
+  <li>Opens Attention queue → 6 unallotted &lt;120 min highlighted with one-click allot action.</li>
+  <li>Bulk-selects 4 airport duties → allotment picker shows compliant, available, nearest drivers with live location → confirms in one action.</li>
+  <li>2 duties blocked (expired insurance) → system names the document → reassigns; override path requires reason.</li>
+  <li>Dispatches all → automated SMS/WhatsApp confirmations sent → board goes green.</li>
+</ol>
+
+<h3>J2 · Driver — Airport Duty with Poor Signal</h3>
+<ol>
+  <li>Receives push → views duty pack (addresses pre-fetched, offline-ready) → navigates.</li>
+  <li>Starts duty (odometer photo) → enters tunnel, signal lost → app queues GPS points locally.</li>
+  <li>Signal returns → auto-sync, gap annotated → adds toll + photo, collects OTP + signature → closes.</li>
+  <li>Stop duty completes without hang or cache-clear — state was written locally first. Supervisor sees completed slip.</li>
+</ol>
+
+<h3>J3 · Billing Executive — Month-End (2,000 Duties)</h3>
+<ol>
+  <li>Filters completed unbilled duties → creates consolidated invoice (async build) → notified on completion.</li>
+  <li>Reviews exceptions (3 price overrides flagged) → issues → e-invoice generated → dispatches via email + WhatsApp.</li>
+  <li>Corporate rejects 2 lines (missing toll proof) → adds proofs → re-issues with linked correction → accepted → payment link sent → receipt auto-matched.</li>
+</ol>
+
+<h3>J4 · Employee — Late-Night Booking (via Passenger App)</h3>
+<ol>
+  <li>Logs in via corporate SSO (no separate password, no login failure) → requests airport drop for 23:40.</li>
+  <li>Policy engine approves inline → manager approves via push notification in 12 min.</li>
+  <li>Driver details + OTP arrive → live tracking visible in app → share link sent to family.</li>
+  <li>Ride ends → approves slip → rates in-app → cost centre charged automatically.</li>
+</ol>
+
+<h3>J5 · Corporate Finance — Invoice Friday</h3>
+<ol>
+  <li>Opens verification inbox → 47 invoices, 41 auto-accepted with rule citations, 6 flagged with reasons.</li>
+  <li>Drills into flagged invoice: tolerance exceeded by 12 min → checks route log → accepts with note.</li>
+  <li>Approves batch → payables updated → forecast refreshed → vendor paid per terms.</li>
+</ol>
+
+<h3>J6 · Support Agent — Driver Payment Dispute</h3>
+<ol>
+  <li>Ticket arrives linked to a duty → opens driver record (association history, payout sheet) and duty slip (versions + proofs).</li>
+  <li>Finds toll photo missing → annotates via dispute intervention → fleet uploads proof.</li>
+  <li>Supervisor re-closes (new version) → payout sheet updates → agent resolves with evidence → CSAT sent.</li>
+</ol>
+
+<!-- ===== SECTION 7 ===== -->
+<a class="section-anchor" id="s7"></a>
+<h2>7. Business Rules (Normative)</h2>
+
+<p>These rules govern the calculation engine (FR-131). In any conflict between UI copy and this section, this section prevails.</p>
+
+<h3>7.1 Inputs</h3>
+<p>Start/end datetime (actuals), start/end odometer, optional garage events, duty type (version at allotment date), vehicle group, and the price-book version effective on the duty date.</p>
+
+<h3>7.2 Core Computation Sequence</h3>
+<pre><code>1. total_km  = max(0, end_odo − start_odo) + garage_km          [if garage billing enabled]
+2. total_hr  = ceil_to_step( (end − start − grace), step )      [step ∈ {0.5, 1.0} per duty type; paise-exact]
+3. extra_km  = max(0, total_km − pkg_km)
+   extra_hr  = max(0, total_hr − pkg_hr)
+4. extra_charge:
+     SUM mode:      extra_km × km_rate + extra_hr × hr_rate
+     HIGHER_OF:     max(extra_km × km_rate, extra_hr × hr_rate)
+5. night_charge:    minutes_in_night_window × night_rate_per_min  [or flat night allowance if configured]
+6. FGR mode:        bill = fixed_window_amount; actuals recorded in actuals_km/actuals_hr for audit only
+7. garage_charge:   haversine(reporting, garage) + haversine(drop, garage)
+                    × company_factor, capped per policy
+8. taxable_subtotal = base + extras + night + chargeable_allowances + billing_items
+   GST             = per-line tax computation (CGST+SGST or IGST based on state of supply)
+   grand_total     = taxable_subtotal + GST + round_off_line
+   driver_payable  = computed in parallel, never shown on customer-facing documents
+9. minimum_billing: if grand_total < minimum_amount, bill minimum_amount
+                    delta shown as "Minimum Billing Adjustment" line item
+</code></pre>
+
+<h3>7.3 Integrity Rules</h3>
+<ol>
+  <li>Unpriced combinations blocked by default (FR-113).</li>
+  <li>Post-completion edits create new versions; originals immutable (FR-134).</li>
+  <li>All money in integer paise (int64); rounding disclosed as a named line item.</li>
+  <li>Cancellation/no-show charges computed per published matrices; no-show requires driver evidence (FR-167).</li>
+  <li>E-invoice documents render only from IRN-acknowledged snapshots (FR-146).</li>
+  <li>Driver-payable computation runs in the same calculation engine pass but is stored in a separate column; never surfaced on any customer-facing output.</li>
+</ol>
+
+<!-- ===== SECTION 8 ===== -->
+<a class="section-anchor" id="s8"></a>
+<h2>8. UX / UI Requirements</h2>
+
+<table>
+  <tr><th>ID</th><th>Requirement</th><th>Technical Implication</th></tr>
+  <tr><td>UX-1</td><td><strong>Information Architecture:</strong> Vendor IA: Home / Bookings / Duties Board / Availability / Billing / Receipts / Purchase / Fleet&amp;People / Customers&amp;Pricing / Reports / Network / Settings. Corporate IA: Home / Requests / Approvals / Trips / Invoices / Budgets / Vendors / People&amp;Policy / Reports / Settings. Admin IA: Overview / Clients / Vendors / Drivers / Cabs / Users / Subscriptions&amp;Payments / Operations / Support / Audit / Analytics / Settings.</td><td>Three separate React apps sharing a component library; separate routing trees; no shared session state across surfaces.</td></tr>
+  <tr><td>UX-2</td><td><strong>Tables:</strong> Virtualised, column chooser, filters, saved/shared views, bulk bar, empty states with template CTAs. No hidden-only actions.</td><td>TanStack Table + TanStack Virtual. Saved views stored server-side. Bulk actions via SQS async jobs with per-row result reporting.</td></tr>
+  <tr><td>UX-3</td><td><strong>Money Transparency:</strong> Every amount expands to its formula (rate × qty ± adjustments) with a link to the price-book version.</td><td>Calculation result stored as line_items JSONB on slip record; expandable UI renders from stored breakdown, not recomputed on page load.</td></tr>
+  <tr><td>UX-4</td><td><strong>Command Search:</strong> ⌘K global search (duties, invoices, drivers, customers) with keyboard-first dispatch actions.</td><td>Full-text search via PostgreSQL tsvector or Elasticsearch (V2). Command palette: cmdk library. Dispatch actions: deep-links to record + pre-filled action modals.</td></tr>
+  <tr><td>UX-5</td><td><strong>Mobile Driver Mode:</strong> Persistent Start/Stop sheet, ≤12 taps start-to-close, 8 languages, large-touch driver mode, SOS always visible during active trips.</td><td>SOS: always-visible FAB, z-index above all other elements, non-dismissable. Large-touch mode: minimum 48×48dp touch targets. Language: i18n via i18next with lazy-loaded language packs.</td></tr>
+  <tr><td>UX-6</td><td><strong>Accessibility:</strong> WCAG 2.1 AA on web; dynamic type + voice-assisted flows on mobile; Hindi-first microcopy for driver journeys.</td><td>Automated a11y testing via axe-core in CI. Dynamic type: REM-based sizing. Hindi microcopy: separate translation file, reviewed by native speaker before each release.</td></tr>
+  <tr><td>UX-7</td><td><strong>Feedback:</strong> Async jobs always show progress + completion channels; empty/error states show cause + next action + support path.</td><td>Job progress via WebSocket; fallback to 15s polling. Error states: error_code → human message mapping table; every error includes a "contact support" deep-link with pre-filled context.</td></tr>
+</table>
+
+<!-- ===== SECTION 9 ===== -->
+<a class="section-anchor" id="s9"></a>
+<h2>9. Non-Functional Requirements</h2>
+
+<table>
+  <tr><th>ID</th><th>Category</th><th>Requirement</th><th>Target</th><th>Measurement Method</th></tr>
+  <tr><td>NFR-1</td><td>Web Performance</td><td>Time-to-interactive on 4G reference device</td><td>&lt;3.5s; LCP &lt;2.5s</td><td>Lighthouse CI in CD pipeline; real-user monitoring via SpeedCurve</td></tr>
+  <tr><td>NFR-2</td><td>API Latency</td><td>p95 authenticated API response</td><td>&lt;600ms</td><td>Distributed tracing (OpenTelemetry); SLO dashboard</td></tr>
+  <tr><td>NFR-3</td><td>Tracking Ingest</td><td>p95 event visible to dashboard operator</td><td>&lt;60s online; 100% on reconnect</td><td>Synthetic test: inject GPS event, measure time to dashboard visibility</td></tr>
+  <tr><td>NFR-4</td><td>Billing Scale</td><td>10K-line invoice build (median)</td><td>&lt;60s async</td><td>Load test with 10K synthetic duty lines; median P95 timing</td></tr>
+  <tr><td>NFR-5</td><td>Roster Scale</td><td>Interactive table with 5,000 rows</td><td>≥50fps scroll on reference hardware</td><td>Puppeteer scroll test; frame-time measurement</td></tr>
+  <tr><td>NFR-6</td><td>Availability</td><td>Web/API uptime (monthly)</td><td>≥99.9%</td><td>Synthetic uptime monitor (Pingdom/Better Uptime); SLO alerting</td></tr>
+  <tr><td>NFR-7</td><td>Recovery</td><td>RPO / RTO</td><td>≤5 min / ≤30 min</td><td>Quarterly DR drill with documented results; auto-failover test</td></tr>
+  <tr><td>NFR-8</td><td>App Footprint</td><td>Install size / cold start (2GB RAM device)</td><td>&lt;25MB / &lt;2s</td><td>App bundle analyser; cold-start test on Redmi 10 reference device</td></tr>
+  <tr><td>NFR-9</td><td>App Quality</td><td>Crash-free sessions (driver app)</td><td>≥99.5%</td><td>Sentry crash-free session rate; weekly review</td></tr>
+  <tr><td>NFR-10</td><td>Communications</td><td>SMS/WhatsApp delivery rate (30-day)</td><td>≥97%</td><td>Provider delivery log aggregate; 30-day rolling rate in admin MIS</td></tr>
+  <tr><td>NFR-11</td><td>Data Residency</td><td>All customer data at rest and in transit</td><td>India (ap-south-1) only</td><td>AWS Config rule: no cross-region data replication to non-India regions</td></tr>
+  <tr><td>NFR-12</td><td>Backups</td><td>Snapshots + point-in-time recovery</td><td>Daily automated + 30-day PITR</td><td>Monthly restore test; restore time documented</td></tr>
+  <tr><td>NFR-13</td><td>Observability</td><td>Tracing coverage; PII redaction in logs</td><td>100% services instrumented; 0 PII/OTP in logs</td><td>OpenTelemetry coverage report; log sampling for PII leaks in CI</td></tr>
+  <tr><td>NFR-14</td><td>Peak Load</td><td>Month-end absorption without manual scaling</td><td>10× daily load, no manual action</td><td>Annual load test at simulated 10× volume; ECS auto-scaling verified</td></tr>
+  <tr><td>NFR-15</td><td>Offline Duration</td><td>Driver app offline tolerance</td><td>4 hours continuous offline, full functionality</td><td>Offline integration test: disable network, run full duty lifecycle, restore, verify sync</td></tr>
+</table>
+
+<!-- ===== SECTION 10 ===== -->
+<a class="section-anchor" id="s10"></a>
+<h2>10. Data Model</h2>
+
+<h3>10.1 Core Entities</h3>
+
+<table>
+  <tr><th>Entity</th><th>Key Attributes</th><th>Notes</th></tr>
+  <tr><td>Tenant</td><td>id, type (FLEET/CORPORATE), status, plan_id, gstin, pan, created_at</td><td>Root of all row-level security. type determines available features.</td></tr>
+  <tr><td>Branch</td><td>id, tenant_id, name, city, address, gstin, numbering_series</td><td>Invoice numbering per branch × financial year.</td></tr>
+  <tr><td>User</td><td>id, tenant_id, email, phone, name, status, 2fa_enabled, last_login_at</td><td>Platform-wide unique email. Driver users linked to driver record.</td></tr>
+  <tr><td>RoleGrant</td><td>id, user_id, role_id, branch_id (nullable), granted_by, expires_at</td><td>A user may have multiple role grants across branches.</td></tr>
+  <tr><td>Customer</td><td>id, tenant_id, name, gstin, billing_address, type (CORPORATE/INDIVIDUAL), status</td><td>CustomerContactMethods (phone, email) as child table.</td></tr>
+  <tr><td>Supplier</td><td>id, tenant_id, type (COMPANY/DCO), name, gstin, bank_details</td><td>DCO suppliers also have a driver record.</td></tr>
+  <tr><td>Driver</td><td>id, tenant_id (nullable for platform-level), name, phone, licence_no, status</td><td>May be associated with multiple tenants (cross-tenant registry).</td></tr>
+  <tr><td>Vehicle</td><td>id, tenant_id (nullable), registration_no, cab_type_id, fuel_type, seating, owner_type, gps_fitted</td><td>Registration unique platform-wide. Ownership journaled.</td></tr>
+  <tr><td>DutyType</td><td>id, tenant_id, name, pkg_km, pkg_hr, step, extra_mode, min_billing, garage_billing, fgr_mode, version, effective_from</td><td>Versioned; calculation engine uses snapshot at allotment date.</td></tr>
+  <tr><td>PriceBook</td><td>id, tenant_id, customer_id, city_id, duty_type_id, vehicle_group_id, rates JSONB, effective_from, effective_to</td><td>Overlap excluded via daterange exclusion constraint.</td></tr>
+  <tr><td>Booking</td><td>id, tenant_id, customer_id, duty_type_id, vehicle_group_id, reporting_at, reporting_address, drop_address, source_channel, status</td><td>Status FSM; every transition in booking_timeline.</td></tr>
+  <tr><td>DutySlip</td><td>id, booking_id, version (FK to current_version), start_at, end_at, start_odo, end_odo, status</td><td>Versioned. current_version_id points to latest confirmed version.</td></tr>
+  <tr><td>DutySlipVersion</td><td>id, slip_id, version_no, calculation_result JSONB, created_by, reason, created_at</td><td>Immutable once created. JSON diff stored in slip_version_diff.</td></tr>
+  <tr><td>Invoice</td><td>id, tenant_id, customer_id, branch_id, status, type (SINGLE/CONSOLIDATED/PROFORMA), total_paise, irn, issued_at</td><td>Immutable on issue; corrections via CreditDebitNote.</td></tr>
+  <tr><td>Receipt</td><td>id, tenant_id, customer_id, amount_paise, mode (UPI/NEFT/CHEQUE/GATEWAY), gateway_ref, received_at</td><td>Allocations in receipt_allocations (receipt_id, invoice_id, amount_paise).</td></tr>
+  <tr><td>TrackPoint</td><td>duty_id, recorded_at, lat, lng, accuracy, battery_pct, source (APP/HARDWARE/INTERPOLATED), is_gap_boundary</td><td>TimescaleDB hypertable partitioned by recorded_at. No update path.</td></tr>
+  <tr><td>Tenant (Platform)</td><td>See Tenant above plus plan_id, trial_ends_at, suspended_at, churned_at</td><td>Platform-level billing entities stored in admin schema (separate DB schema).</td></tr>
+  <tr><td>SupportTicket</td><td>id, tenant_id, reporter_type, subject, status, priority, sla_due_at, linked_entity_type, linked_entity_id</td><td>SLA clock paused while waiting on tenant response.</td></tr>
+  <tr><td>AuditLog</td><td>id, tenant_id, actor_id, action, entity_type, entity_id, before JSONB, after JSONB, ip, device_fingerprint, created_at, prev_hash, row_hash</td><td>Append-only. Hash-chained. No delete path. retention_class: STANDARD / FINANCIAL.</td></tr>
+</table>
+
+<h3>10.2 Data Rules</h3>
+<ol>
+  <li>All money in integer paise (int64). Tax computed per line then summed. Rounding difference disclosed as a named line item.</li>
+  <li>Soft-delete with <code>deleted_at</code> timestamps; legal/financial holds exempt from erasure with itemised disclosure in DSAR response.</li>
+  <li>GPS data stored with source label (APP/HARDWARE/INTERPOLATED), accuracy, battery context. Interpolated points never used for billing.</li>
+  <li>PII minimised per purpose; field-level masking by role (driver phone masked for report-only role). Export/delete per DPDP retention matrix.</li>
+  <li>Tenant data export on demand (full-fidelity JSONL + attachments as ZIP) — no lock-in. Available within 24h of request.</li>
+</ol>
+
+<!-- ===== SECTION 11 ===== -->
+<a class="section-anchor" id="s11"></a>
+<h2>11. Integration Requirements</h2>
+
+<table>
+  <tr><th>ID</th><th>Integration</th><th>Direction</th><th>Release</th><th>Technical Contract</th></tr>
+  <tr><td>INT-1</td><td>Maps (Google Places, Geocoding, Routes)</td><td>Out</td><td>MVP</td><td>Server-side proxy; responses cached per (query_hash) with 30-day TTL; per-tenant quota alerts. Fallback: MapmyIndia evaluated for India-specific accuracy.</td></tr>
+  <tr><td>INT-2</td><td>Push Notifications (FCM + APNs)</td><td>Out</td><td>MVP</td><td>FCM HTTP v1 API; APNs via token auth (p8 key). Retry: 3× with 5s backoff. Quiet hours enforced server-side (not device-only). Delivery receipts logged.</td></tr>
+  <tr><td>INT-3</td><td>SMS + Voice (DLT-registered)</td><td>Out</td><td>MVP</td><td>Provider abstraction layer. Primary: Kaleyra (or Gupshup). Fallback: Exotel/Twilio. Circuit breaker: 5 failures/30s triggers failover. DLT header IDs managed in platform config.</td></tr>
+  <tr><td>INT-4</td><td>WhatsApp BSP</td><td>Out</td><td>MVP</td><td>BSP: Gupshup or Interakt. Template IDs stored in platform config. Delivery webhooks stored in message_events. Opt-out handling: record opt-out in customer preferences, suppress future messages.</td></tr>
+  <tr><td>INT-5</td><td>Email (transactional + invoice dispatch)</td><td>Out</td><td>MVP</td><td>SendGrid or AWS SES. Branded custom domain (SPF/DKIM/DMARC configured). Bounce handling: hard bounces flag customer email as invalid. Open/click tracking for invoice dispatch only.</td></tr>
+  <tr><td>INT-6</td><td>Payment Gateway (Razorpay primary + Cashfree fallback)</td><td>Both</td><td>MVP</td><td>Webhooks: HMAC-SHA256 signature verification; idempotency key = gateway_payment_id; Redis SET NX for deduplication. Auto-receipt: created in DB transaction with webhook processing.</td></tr>
+  <tr><td>INT-7</td><td>E-Invoice GSP (ClearTax / Karvy)</td><td>Both</td><td>V1</td><td>IRN request via async queue (SQS); polling for result. IRN stored on invoice record. Cancel: statutory 24h window. Printing only from IRN-acknowledged snapshots. Daily sandbox regression suite run in CI.</td></tr>
+  <tr><td>INT-8</td><td>Tally XML + Zoho Books REST API</td><td>Both</td><td>V1</td><td>Tally: XML push via Tally Prime XML bridge. Zoho: REST API with OAuth2. Sync state machine per record (PENDING/SYNCED/FAILED). Conflict resolution UI in vendor console. 10K-record initial sync with progress report.</td></tr>
+  <tr><td>INT-9</td><td>Corporate SSO (Google OIDC / SAML 2.0) + HRMS import</td><td>In</td><td>V1</td><td>OIDC: standard redirect flow; SAML: IdP-initiated and SP-initiated supported. HRMS import: SFTP or REST webhook, configurable per corporate client. Employee deprovisioning: SCIM protocol support planned.</td></tr>
+  <tr><td>INT-10</td><td>Masked Telephony (Exotel / Knowlarity) — native, no separate app</td><td>Both</td><td>V1</td><td>API-based click-to-call; no separate mobile app required. Recording: S3 storage via provider's recording callback. Consent disclosure: shown inline before first call per session. Call events on duty timeline.</td></tr>
+  <tr><td>INT-11</td><td>Expense / Collaboration Webhooks</td><td>Out</td><td>V1/V2</td><td>Standard event schema (CloudEvents format). HMAC-SHA256 signed payloads. Event types: duty.completed, invoice.issued, payment.received. Retry: 5× exponential backoff; delivery log in admin console.</td></tr>
+  <tr><td>INT-12</td><td>Hardware GPS Feeds</td><td>In</td><td>V2</td><td>Documented ingest protocol: REST (POST /v1/track-ingest) or MQTT. Auth: device API key. Source labelled per point. Duplicate deduplication within 5s window. Device health monitoring via heartbeat.</td></tr>
+  <tr><td>INT-13</td><td>Public API + Webhooks (tenant-facing)</td><td>Both</td><td>V2</td><td>Versioned REST API (/v1/…). OpenAPI 3.0 spec published. Rate limited per tenant (tier-based). Webhook signatures and delivery logs visible to tenant. All tiers receive access (no paywall on table-stakes).</td></tr>
+</table>
+
+<!-- ===== SECTION 12 ===== -->
+<a class="section-anchor" id="s12"></a>
+<h2>12. Security, Privacy &amp; Compliance</h2>
+
+<table>
+  <tr><th>ID</th><th>Area</th><th>Requirement</th><th>Technical Implementation</th></tr>
+  <tr><td>SEC-1</td><td>Tenancy &amp; Access</td><td>Strict tenant isolation; deny-by-default APIs; secrets in managed vault</td><td>Row-level security via tenant_id on every table; PostgreSQL RLS policies enabled. AWS Secrets Manager for all credentials with automatic rotation (90 days). No long-lived credentials in environment variables.</td></tr>
+  <tr><td>SEC-2</td><td>Data Protection</td><td>TLS 1.2+ in transit; AES-256 at rest; field-level encryption for PII vault; OTPs never logged</td><td>TLS enforced at ALB; HSTS headers. RDS encryption at rest (AES-256). PII vault (phone, Aadhaar, bank details): application-level encryption via AWS KMS DEK. Log sanitiser strips OTPs, tokens, card numbers before any log sink.</td></tr>
+  <tr><td>SEC-3</td><td>Privacy (DPDP 2023)</td><td>Consent receipts, purpose limitation, retention engine, DSAR self-service, breach runbook</td><td>Consent stored as consent_receipts (purpose, version, granted_at, ip). Retention engine: scheduled job applies retention_matrix per entity class. DSAR: export ≤24h via async job; erasure ≤72h with legal-hold check. Breach notification runbook: documented in incident response playbook; regulatory notification within 72h.</td></tr>
+  <tr><td>SEC-4</td><td>Assurance</td><td>SOC 2 Type I (month 9), ISO 27001 (month 12); annual pentest; SBOM</td><td>SOC 2 evidence collected via Vanta or Drata from day 1. Annual pentest: scope covers API, mobile apps, admin console. Dependency scanning: Snyk or Dependabot in CI. SBOM: generated per release in SPDX format.</td></tr>
+  <tr><td>SEC-5</td><td>Financial Compliance</td><td>GST correctness, invoice immutability, 7-year financial record retention, maker-checker for payouts</td><td>GST logic: state-of-supply determination tested against all 28 states × 8 UTs. Invoice rows: immutable via DB trigger blocking UPDATE/DELETE on issued invoices. 7-year retention: retention_class='financial' exempt from standard erasure. Maker-checker: configurable threshold, pending_actions table, 4-eyes enforcement.</td></tr>
+</table>
+
+<!-- ===== SECTION 13 ===== -->
+<a class="section-anchor" id="s13"></a>
+<h2>13. Dependencies, Assumptions &amp; Constraints</h2>
+
+<h3>External Dependencies</h3>
+<table>
+  <tr><th>Dependency</th><th>Required By</th><th>Risk</th><th>Mitigation</th></tr>
+  <tr><td>Google Maps Platform</td><td>MVP</td><td>Cost overrun at scale; API changes</td><td>Server-side proxy + aggressive caching; MapmyIndia evaluated as fallback</td></tr>
+  <tr><td>Payment Aggregators (Razorpay + Cashfree)</td><td>MVP</td><td>Outage at month-end</td><td>Primary + fallback implementation; idempotent webhooks; no single-provider dependency for critical flows</td></tr>
+  <tr><td>SMS / Voice (DLT)</td><td>MVP</td><td>DLT registration delays (4–6 weeks)</td><td>Start DLT registration at T-0 of project; maintain 2-provider setup</td></tr>
+  <tr><td>WhatsApp BSP</td><td>MVP</td><td>Template approval delays; policy changes</td><td>Apply for template approval immediately; design SMS fallback for all WhatsApp touchpoints</td></tr>
+  <tr><td>GSP E-Invoice (ClearTax / Karvy)</td><td>V1</td><td>GSP API changes with GSTN</td><td>Abstraction layer behind GSP interface; daily sandbox test suite</td></tr>
+  <tr><td>Corporate SSO / HRMS</td><td>V1</td><td>Varied IdP implementations per client</td><td>Standard OIDC/SAML support; SCIM planned for provisioning</td></tr>
+  <tr><td>Tally / Zoho</td><td>V1</td><td>API version changes</td><td>Versioned client adapters; customer-specific mapping UI for remapping on changes</td></tr>
+</table>
+
+<h3>Key Assumptions</h3>
+<ul>
+  <li>BRD §11 assumptions apply in full.</li>
+  <li>Pilot data (3 months billing history) available for parallel-run validation of calculation engine.</li>
+  <li>Sprint-0 technology decision (Node.js vs Go; React Native vs Flutter) will be made by the Engineering Lead before development begins.</li>
+  <li>At least 2 pilot fleet operators available for MVP validation within month 3.</li>
+</ul>
+
+<h3>Constraints</h3>
+<ul>
+  <li>India data plane (ap-south-1) is non-negotiable for all customer data.</li>
+  <li>Low-end device floor: minimum tested device Redmi 10 (2GB RAM, Android 12).</li>
+  <li>Month-end 10× peak must be absorbed without manual scaling intervention.</li>
+  <li>No paywalling of table-stakes features (brand masking, API access at standard tier).</li>
+  <li>Hindi is the minimum language at MVP; 8 languages by V1.</li>
+</ul>
+
+<!-- ===== SECTION 14 ===== -->
+<a class="section-anchor" id="s14"></a>
+<h2>14. Risks</h2>
+
+<table>
+  <tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th><th>Owner</th></tr>
+  <tr><td>Pricing-edge calculation parity not proven before launch</td><td>Medium</td><td>High — billing disputes destroy fleet trust</td><td>Shadow billing mandatory: no launch without pilot-history parallel-run within 0.5% tolerance. Golden suite 1,000 cases must pass in CI.</td><td>Product + Engineering</td></tr>
+  <tr><td>OEM battery management kills background GPS on low-end phones</td><td>High</td><td>High — tracking gaps, slip inaccuracies</td><td>OEM battery exemption guide per top 10 OEM skins; battery exemption coach on first duty; per-release OEM matrix maintained. Foreground service with persistent notification.</td><td>Mobile Engineering</td></tr>
+  <tr><td>Offline sync conflicts on stop-duty</td><td>Medium</td><td>High — stuck drivers, duplicate slips</td><td>Server-authoritative conflict resolution; idempotency keys on all sync operations; no UI state dependent on server response before local transition. Integration test suite for offline scenarios.</td><td>Mobile Engineering</td></tr>
+  <tr><td>Invoice verification false-accepts at corporate</td><td>Medium</td><td>High — compliance failures, lost corporate trust</td><td>Weekly audit of accepted invoices until false-accept rate = 0; rule citations stored for every verdict; tolerance tuning UI for corporate finance.</td><td>Product</td></tr>
+  <tr><td>DLT registration delays block SMS at MVP</td><td>High</td><td>Medium — no driver notifications</td><td>Start DLT registration at project T-0; maintain WhatsApp + email as fallback channels from day 1.</td><td>Operations</td></tr>
+  <tr><td>Network/trust design has legal ambiguity (V2)</td><td>Medium</td><td>Medium</td><td>Legal review of network design required before V2 build begins; trust-score formula published in-app.</td><td>Legal + Product</td></tr>
+  <tr><td>DPDP compliance gaps (competitor has "data can't be deleted" on their apps)</td><td>Low (if built right)</td><td>High — regulatory liability</td><td>DSAR self-service from V1; erasure pipeline built before corporate launch; Data Protection Officer engaged from month 6.</td><td>Engineering + Legal</td></tr>
+</table>
+
+<!-- ===== SECTION 15 ===== -->
+<a class="section-anchor" id="s15"></a>
+<h2>15. Acceptance Criteria &amp; Definition of Done</h2>
+
+<h3>Release Acceptance Gate</h3>
+<ul>
+  <li>All P-level FRs for the release pass their stated ACs.</li>
+  <li>Golden calculation suite (1,000 cases) green on CI.</li>
+  <li>Shadow-billing tolerance met (MVP/V1 billing changes): &lt;0.5% deviation from pilot history.</li>
+  <li>NFR spot-checks pass (p95 API latency, 5K-row table render, app cold start).</li>
+  <li>Offline integration test suite green (FR-250 scenarios).</li>
+  <li>Security review signed by InfoSec lead.</li>
+  <li>Pilot UAT signed by at least 2 fleet operators (MVP) or 1 corporate client (V1).</li>
+  <li>Docs + in-app guidance shipped (no placeholder "coming soon" on shipped features).</li>
+</ul>
+
+<h3>Story Definition of Done</h3>
+<ul>
+  <li>Coded + unit tested (≥80% coverage for new code paths).</li>
+  <li>Integration tested (API contract tested against OpenAPI spec).</li>
+  <li>UX reviewed against designs (pixel-diff or designer sign-off).</li>
+  <li>Audit coverage verified (every mutation produces an audit row — test in story AC).</li>
+  <li>Permission coverage verified (unauthorised access returns 403 — test in story AC).</li>
+  <li>Telemetry: relevant events instrumented (OpenTelemetry spans, custom metrics).</li>
+  <li>Docs updated (internal wiki + in-app help text if user-facing).</li>
+  <li>Feature-flag gated rollout plan in place for any change touching billing logic.</li>
+</ul>
+
+<!-- ===== SECTION 16 ===== -->
+<a class="section-anchor" id="s16"></a>
+<h2>16. Glossary</h2>
+
+<table>
+  <tr><th>Term</th><th>Definition</th></tr>
+  <tr><td>Duty</td><td>One executed job from pickup to drop.</td></tr>
+  <tr><td>Duty Slip</td><td>The billable record of an executed duty; versioned and immutable once confirmed.</td></tr>
+  <tr><td>DCO</td><td>Driver-cum-Owner — a supplier who is both the driver and vehicle owner.</td></tr>
+  <tr><td>Garage KM/Time</td><td>Billable deadhead distance/time from garage to pickup and drop to garage, per policy.</td></tr>
+  <tr><td>FGR</td><td>Fixed-Gross-Rate — a billing mode that charges a fixed amount regardless of actuals; actuals recorded for audit only.</td></tr>
+  <tr><td>Higher-Of</td><td>Extra charge = max(km-extra, hr-extra), rather than their sum.</td></tr>
+  <tr><td>Allotment</td><td>Assigning a driver + vehicle (or supplier) to a duty. Temporary allotment = expirable hold.</td></tr>
+  <tr><td>Consolidated Invoice</td><td>A single invoice covering multiple completed duties within a billing period.</td></tr>
+  <tr><td>Purchase Duty</td><td>An outsourced job billed to the platform's customer but fulfilled by an associate supplier; tracked separately for cost and margin.</td></tr>
+  <tr><td>DSO</td><td>Days Sales Outstanding — average days from invoice dispatch to receipt.</td></tr>
+  <tr><td>Three-Way Match</td><td>Reconciliation of: (1) executed duty slip, (2) supplier bill, (3) customer sale. All three must match within tolerance for auto-accept.</td></tr>
+  <tr><td>IRN</td><td>Invoice Reference Number — the GSTN-issued identifier for a GST e-invoice.</td></tr>
+  <tr><td>Tenant</td><td>A customer organisation of the platform — either a fleet operator or a corporate client. Each tenant has full data isolation.</td></tr>
+  <tr><td>Client 360°</td><td>The unified admin profile of a tenant: KYC, contacts, subscription, usage, dues, open tickets, and health score.</td></tr>
+  <tr><td>Paise</td><td>Unit of all monetary storage (int64). 1 Indian Rupee = 100 paise. All calculations performed in paise to avoid floating-point errors.</td></tr>
+  <tr><td>DSAR</td><td>Data Subject Access Request — a request by an individual to access or delete their personal data, per DPDP 2023.</td></tr>
+  <tr><td>DPDP</td><td>Digital Personal Data Protection Act 2023 — India's primary data privacy legislation, effective 2024.</td></tr>
+  <tr><td>BSP</td><td>Business Solution Provider — an authorised WhatsApp Business API reseller and integration partner.</td></tr>
+  <tr><td>DLT</td><td>Distributed Ledger Technology platform (TRAI) — India's regulatory requirement for registering commercial SMS sender IDs and templates.</td></tr>
+  <tr><td>Maker-Checker</td><td>A four-eyes financial control: a "maker" initiates an action, a different "checker" must approve it before execution.</td></tr>
+  <tr><td>RLS</td><td>Row-Level Security — PostgreSQL feature enforcing tenant isolation at the database query level.</td></tr>
+  <tr><td>SLA</td><td>Service Level Agreement — a contractual commitment on response or completion time for a duty or support action.</td></tr>
+</table>
+
+<br>
+<hr style="border-color: var(--border);">
+<p style="color: var(--muted); font-size: 12px; text-align: center; padding: 20px 0;">
+  Traceability: FR→BR mapping embedded per requirement. Change control: any post-sign-off change requires an impact assessment + re-approval from Product, Engineering, and Sponsor before implementation.
+</p>
+
+</main>
+</div>
+</body>
+</html>

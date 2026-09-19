@@ -1,0 +1,352 @@
+openapi: 3.1.0
+info:
+  title: Axiom Fleet Operations API
+  version: 2026.09
+  description: >-
+    Organization-scoped API contract for the Axiom Fleet local fallback and
+    Supabase production adapter. External providers are mock adapters until
+    project credentials are configured.
+servers:
+  - url: /
+    description: Same-origin deployment
+security:
+  - sessionCookie: []
+tags:
+  - name: Auth
+  - name: Operations
+  - name: Execution
+  - name: Finance
+  - name: Governance
+  - name: Network
+paths:
+  /api/health:
+    get:
+      security: []
+      tags: [Operations]
+      responses:
+        '200': {description: Healthy service}
+  /api/auth/login:
+    post:
+      security: []
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/LoginRequest'}}
+      responses:
+        '200': {description: Authenticated session}
+        '401': {description: Invalid credentials}
+  /api/auth/signup:
+    post:
+      security: []
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/SignupRequest'}}
+      responses:
+        '201': {description: Account created}
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      responses:
+        '200': {description: Current user}
+  /api/onboarding:
+    get:
+      tags: [Operations]
+      responses:
+        '200': {description: Server-side onboarding progress}
+    patch:
+      tags: [Operations]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/OnboardingPatch'}}
+      responses:
+        '200': {description: Step saved}
+  /api/bookings:
+    get:
+      tags: [Operations]
+      responses:
+        '200': {description: Organization-scoped bookings}
+    post:
+      tags: [Operations]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/BookingRequest'}}
+      responses:
+        '201': {description: Booking created}
+  /api/bookings/recurring:
+    get:
+      tags: [Operations]
+      responses:
+        '200': {description: Recurring booking series}
+    post:
+      tags: [Operations]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/RecurringBookingRequest'}}
+      responses:
+        '201': {description: Series and generated instances}
+  /api/bookings/{bookingId}/stops:
+    parameters: [{in: path, name: bookingId, required: true, schema: {type: string}}]
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Multi-stop route plan}}
+    post:
+      tags: [Operations]
+      requestBody:
+        content:
+          application/json: {schema: {type: object, required: [stops], properties: {stops: {type: array, items: {$ref: '#/components/schemas/Stop'}}}}}
+      responses: {'201': {description: Stops saved}}
+  /api/duties/{dutyId}:
+    parameters: [{in: path, name: dutyId, required: true, schema: {type: string}}]
+    patch:
+      tags: [Execution]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/DutyTransition'}}
+      responses: {'200': {description: Duty transition}}
+  /api/duties/{dutyId}/proof:
+    parameters: [{in: path, name: dutyId, required: true, schema: {type: string}}]
+    post:
+      tags: [Execution]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/ProofRequest'}}
+      responses: {'201': {description: Duty proof recorded}}
+  /api/sync/replay:
+    post:
+      tags: [Execution]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/SyncReplayRequest'}}
+      responses: {'200': {description: Idempotent replay result}}
+  /api/tax/calculate:
+    post:
+      tags: [Finance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/TaxRequest'}}
+      responses: {'200': {description: CGST/SGST or IGST result}}
+  /api/supplier-bills:
+    get: {tags: [Finance], responses: {'200': {description: Supplier bill ledger}}}
+    post:
+      tags: [Finance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/SupplierBillRequest'}}
+      responses: {'201': {description: Captured supplier bill}}
+  /api/costs:
+    get: {tags: [Finance], responses: {'200': {description: Cost ledger}}}
+    post:
+      tags: [Finance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/CostRequest'}}
+      responses: {'201': {description: Cost recorded}}
+  /api/payment-links:
+    get: {tags: [Finance], responses: {'200': {description: Payment links}}}
+    post:
+      tags: [Finance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/PaymentLinkRequest'}}
+      responses: {'201': {description: Mock payment link}}
+  /api/public/payment-links/{shortCode}:
+    parameters: [{in: path, name: shortCode, required: true, schema: {type: string}}]
+    get:
+      security: []
+      tags: [Finance]
+      responses: {'200': {description: Safe payment context}}
+    post:
+      security: []
+      tags: [Finance]
+      requestBody:
+        content:
+          application/json: {schema: {type: object, properties: {action: {type: string, enum: [pay]}}}}
+      responses: {'200': {description: Mock payment captured}}
+  /api/financial-actions:
+    post:
+      tags: [Finance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/FinancialActionRequest'}}
+      responses: {'201': {description: Pending maker-checker action}}
+  /api/updates:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Polling cursor and operational events}}
+  /api/network/edges:
+    get: {tags: [Network], responses: {'200': {description: Associate relationships}}}
+    post:
+      tags: [Network]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkEdgeRequest'}}
+      responses: {'201': {description: Partner relationship}}
+  /api/reports/export:
+    post:
+      tags: [Governance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/ExportRequest'}}
+      responses: {'202': {description: Export job or ready export}}
+  /api/security/2fa/setup:
+    post:
+      tags: [Governance]
+      responses: {'200': {description: Mock factor enrollment contract}}
+  /api/security/2fa/verify:
+    post:
+      tags: [Governance]
+      requestBody:
+        content:
+          application/json: {schema: {type: object, required: [code], properties: {code: {type: string}}}}
+      responses: {'200': {description: Factor enabled}}
+  /api/privacy/requests:
+    get: {tags: [Governance], responses: {'200': {description: Privacy request ledger}}}
+    post:
+      tags: [Governance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/PrivacyRequest'}}
+      responses: {'201': {description: Privacy request recorded}}
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: axiom_session
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: {type: string, format: email}
+        password: {type: string, minLength: 8}
+    SignupRequest:
+      allOf:
+        - $ref: '#/components/schemas/LoginRequest'
+        - type: object
+          required: [role, full_name]
+          properties:
+            role: {type: string, enum: [vendor, driver, corporate]}
+            full_name: {type: string}
+            phone: {type: string}
+            city: {type: string}
+            organization_name: {type: string}
+    OnboardingPatch:
+      type: object
+      required: [step]
+      properties:
+        step: {type: string}
+        status: {type: string, enum: [pending, complete]}
+        metadata: {type: object}
+    BookingRequest:
+      type: object
+      required: [passenger_name, pickup, dropoff]
+      properties:
+        customer_id: {type: string}
+        passenger_name: {type: string}
+        passenger_phone: {type: string}
+        pickup: {type: object}
+        dropoff: {type: object}
+        scheduled_at: {type: string, format: date-time}
+        duty_type: {type: string}
+    RecurringBookingRequest:
+      type: object
+      required: [cadence, start_at, occurrences, template]
+      properties:
+        cadence: {type: string, enum: [daily, weekly, monthly, business_days]}
+        start_at: {type: string, format: date-time}
+        end_at: {type: string, format: date-time}
+        occurrences: {type: integer, minimum: 1, maximum: 365}
+        template: {$ref: '#/components/schemas/BookingRequest'}
+    Stop:
+      type: object
+      required: [label]
+      properties:
+        label: {type: string}
+        address: {type: object}
+        arrival_at: {type: string, format: date-time}
+        departure_at: {type: string, format: date-time}
+    DutyTransition:
+      type: object
+      required: [status]
+      properties:
+        status: {type: string}
+        start_odometer: {type: integer, minimum: 0}
+        end_odometer: {type: integer, minimum: 0}
+        idempotency_key: {type: string}
+    ProofRequest:
+      type: object
+      required: [proof_type]
+      properties:
+        proof_type: {type: string, enum: [otp, signature, photo, duty_slip, note]}
+        proof_data: {type: object}
+        idempotency_key: {type: string}
+    SyncReplayRequest:
+      type: object
+      required: [operations]
+      properties:
+        device_id: {type: string}
+        operations: {type: array, items: {type: object}}
+    TaxRequest:
+      type: object
+      required: [taxable_paise, origin_state]
+      properties:
+        taxable_paise: {type: integer, minimum: 0}
+        tax_rate_bps: {type: integer, minimum: 0, maximum: 10000}
+        origin_state: {type: string}
+        destination_state: {type: string}
+    SupplierBillRequest:
+      type: object
+      required: [bill_number, total_paise]
+      properties:
+        bill_number: {type: string}
+        subtotal_paise: {type: integer, minimum: 0}
+        tax_paise: {type: integer, minimum: 0}
+        total_paise: {type: integer, minimum: 0}
+        supplier_id: {type: string}
+    CostRequest:
+      type: object
+      required: [category, amount_paise]
+      properties:
+        category: {type: string}
+        amount_paise: {type: integer, minimum: 0}
+        cost_type: {type: string}
+        vehicle_id: {type: string}
+        duty_id: {type: string}
+    PaymentLinkRequest:
+      type: object
+      required: [amount_paise]
+      properties:
+        invoice_id: {type: string}
+        amount_paise: {type: integer, minimum: 0}
+        expires_days: {type: integer, minimum: 1, maximum: 30}
+    FinancialActionRequest:
+      type: object
+      required: [action_type, entity_type, entity_id]
+      properties:
+        action_type: {type: string}
+        entity_type: {type: string}
+        entity_id: {type: string}
+        payload: {type: object}
+    NetworkEdgeRequest:
+      type: object
+      required: [partner_name]
+      properties:
+        partner_name: {type: string}
+        cities: {type: array, items: {type: string}}
+    ExportRequest:
+      type: object
+      properties:
+        report_type: {type: string}
+        filters: {type: object}
+    PrivacyRequest:
+      type: object
+      required: [request_type]
+      properties:
+        request_type: {type: string, enum: [access, correction, deletion, export, withdraw_consent]}
+        notes: {type: string}

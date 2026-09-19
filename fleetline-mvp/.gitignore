@@ -1,0 +1,7 @@
+# Local runtime data and Python cache
+__pycache__/
+*.py[cod]
+data/*.sqlite3
+data/*.sqlite3-shm
+data/*.sqlite3-wal
+supabase/config.js
