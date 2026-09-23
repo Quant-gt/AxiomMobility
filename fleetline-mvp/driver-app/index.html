@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#142126">
   <meta name="description" content="Axiom Fleet Driver app — duties, offline sync and safety.">
   <link rel="manifest" href="manifest.json">
+  <script src="../supabase/config.js"></script>
+  <script src="../supabase/client.js"></script>
   <title>Axiom Fleet Driver</title>
   <style>
     :root { color-scheme: light; --ink:#17262d; --ink-2:#2c3f44; --muted:#708184; --muted-2:#9aa8a8; --line:#e2eae5; --canvas:#f3f7f3; --card:#fffefa; --deep:#142126; --deep-2:#1c3033; --lime:#dafa5b; --lime-dark:#657c19; --teal:#0e8b79; --teal-soft:#e3f6ef; --blue:#356fdd; --blue-soft:#e8f0ff; --amber:#b5771c; --amber-soft:#fff3da; --red:#c84c55; --red-soft:#ffeaed; --shadow:0 12px 32px rgba(24,42,37,.08); }
@@ -106,7 +108,10 @@
   function saveQueue(){ try { localStorage.setItem(queueKey,JSON.stringify(state.queue)); } catch (_) {} updateQueueBadge(); }
   function esc(value=''){ return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
   function initials(name='Driver'){ return name.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]).join('').toUpperCase() || 'DR'; }
-  function api(path, options={}){
+  async function api(path, options={}){
+    if (window.AxiomSupabaseAdapter?.enabled) {
+      return await window.AxiomSupabaseAdapter.request(path, options);
+    }
     const headers = {...(options.headers||{})}; if(options.body && !headers['Content-Type']) headers['Content-Type']='application/json';
     return fetch(path,{...options,headers,credentials:'include'}).then(async response=>{ let data={}; try{data=await response.json();}catch(_){ } if(!response.ok) throw new Error(data.error||'The service could not complete that action.'); return data; });
   }

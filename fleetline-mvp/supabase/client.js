@@ -23,10 +23,18 @@
   }
 
   function readSession() {
-    try { return JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch (_) { return null; }
+    try {
+      const parsed = JSON.parse(localStorage.getItem(storageKey) || 'null');
+      if (parsed && typeof parsed === 'object' && parsed.access_token && typeof parsed.access_token === 'string') {
+        return parsed;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
   function writeSession(session) {
-    if (session) localStorage.setItem(storageKey, JSON.stringify(session));
+    if (session && session.access_token) localStorage.setItem(storageKey, JSON.stringify(session));
     else localStorage.removeItem(storageKey);
   }
   function authHeaders(token) {
@@ -44,11 +52,23 @@
     }
     return String(value);
   }
+  function sanitizeError(msg) {
+    if (!msg || typeof msg !== 'string') return 'Request could not be completed.';
+    // Strip raw internal PostgreSQL details, table names or constraint references
+    if (/relation ".*" does not exist/i.test(msg) || /duplicate key value violates unique constraint/i.test(msg)) {
+      return 'The requested record is invalid or already exists.';
+    }
+    if (/permission denied for table|violates row-level security/i.test(msg)) {
+      return 'You do not have permission to perform this action.';
+    }
+    return msg;
+  }
   async function parseResponse(response) {
     let payload = {};
     try { payload = await response.json(); } catch (_) { payload = {}; }
     if (!response.ok) {
-      throw new Error(payload.error_description || payload.msg || payload.message || payload.error || 'Supabase request failed.');
+      const raw = payload.error_description || payload.msg || payload.message || payload.error || 'Supabase request failed.';
+      throw new Error(sanitizeError(raw));
     }
     return payload;
   }
