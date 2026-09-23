@@ -17,7 +17,9 @@ function response(body: unknown, status = 200) {
 function integer(value: unknown, name: string): number {
   if (value === null || value === undefined || value === "") return 0;
   const number = Number(value);
-  if (!Number.isSafeInteger(number) || number < 0) throw new Error(`${name} must be a non-negative safe integer`);
+  if (!Number.isSafeInteger(number) || number < 0 || number > 1_000_000_000) {
+    throw new Error(`${name} must be a non-negative integer under 1,000,000,000`);
+  }
   return number;
 }
 
