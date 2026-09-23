@@ -1171,7 +1171,6 @@
     function regionalDistanceUnit() { return regionalSettings().distance_unit || 'km'; }
     function regionalCurrencyCode() { return regionalSettings().currency || 'USD'; }
     function regionalTaxRate() { const value=Number(regionalSettings().tax_rate_bps); return Number.isFinite(value) ? value / 10000 : 0; }
-    function esc(value = '') { return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c])); }
     function formatAmount(n) { const settings = regionalSettings(); try { return new Intl.NumberFormat(regionalLocale(), { style: 'currency', currency: settings.currency || 'USD', maximumFractionDigits: 0 }).format(Number(n || 0)); } catch (_) { return `${settings.currency || 'USD'} ${Number(n || 0).toLocaleString(regionalLocale())}`; } }
     function formatLegacyAmount(value) { const numeric=Number(String(value ?? '').replace(/[^0-9.-]/g,'')); return Number.isFinite(numeric) && String(value ?? '').trim() ? formatAmount(numeric) : (value || '—'); }
     function formatDateTime(value, options = { dateStyle: 'medium', timeStyle: 'short' }) { if (!value) return '—'; try { return new Intl.DateTimeFormat(regionalLocale(), { ...options, timeZone: regionalSettings().timezone || undefined }).format(new Date(value)); } catch (_) { return String(value); } }
