@@ -8,6 +8,7 @@ import os
 import socket
 import sqlite3
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.error
@@ -58,7 +59,7 @@ def main() -> None:
         env = os.environ.copy()
         env.update({"PORT": str(port), "AXIOM_DB_PATH": str(db_path)})
         process = subprocess.Popen(
-            ["python3", "server.py"],
+            [sys.executable, "server.py"],
             cwd=ROOT,
             env=env,
             stdout=subprocess.PIPE,

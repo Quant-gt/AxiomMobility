@@ -177,7 +177,28 @@
       }
     };
   }
+  const DISPOSABLE_EMAIL_DOMAINS = new Set([
+    'mailinator.com', 'tempmail.com', 'temp-mail.org', '10minutemail.com',
+    'guerrillamail.com', 'throwawaymail.com', 'sharklasers.com', 'yopmail.com',
+    'getairmail.com', 'dispostable.com', 'trashmail.com', 'fakeinbox.com',
+    'mytemp.email', 'tempail.com', 'mohmal.com', 'burnermail.io',
+    'crazymailing.com', 'generator.email', 'inboxkitten.com', 'dropmail.me',
+    'tempinbox.com', 'disposablemail.com', 'emailondeck.com', 'guerrillamail.biz',
+    'guerrillamail.net', 'guerrillamail.org', 'guerrillamailblock.com', 'pokemail.net',
+    'spam4.me', 'grr.la', 'tempmail.net', 'tempmailaddress.com', 'fakemailgenerator.com'
+  ]);
+  function isDisposableEmail(email) {
+    if (!email || typeof email !== 'string' || !email.includes('@')) return false;
+    const parts = email.toLowerCase().trim().split('@');
+    if (parts.length !== 2) return false;
+    const domain = parts[1];
+    if (DISPOSABLE_EMAIL_DOMAINS.has(domain)) return true;
+    return /(temp|trash|fake|disposable|throwaway|burner|guerrilla|10minute|mailinator)/i.test(domain);
+  }
   async function signUp(payload) {
+    if (isDisposableEmail(payload.email)) {
+      throw new Error('Temporary or disposable email addresses are not permitted. Please use your official or corporate email.');
+    }
     const authData = await authRequest('/signup', {
       method: 'POST',
       body: JSON.stringify({
@@ -1015,9 +1036,31 @@
     const session = await refreshIfNeeded();
     if (!session?.access_token) throw new Error('Sign in required.');
     const current = await currentUser();
+
+    const authUpdates = {};
+    if (payload.password) {
+      if (typeof payload.password !== 'string' || payload.password.length < 8) {
+        throw new Error('Password must be at least 8 characters long.');
+      }
+      authUpdates.password = payload.password;
+    }
+    if (payload.email && payload.email !== current.user.email) {
+      if (isDisposableEmail(payload.email)) {
+        throw new Error('Temporary or disposable email addresses are not permitted.');
+      }
+      authUpdates.email = payload.email;
+    }
+    if (Object.keys(authUpdates).length) {
+      await authRequest('/user', {
+        method: 'PUT',
+        body: JSON.stringify(authUpdates)
+      }, session.access_token);
+    }
+
     const profilePatch = {};
     if (payload.full_name !== undefined) profilePatch.full_name = payload.full_name;
     if (payload.phone !== undefined) profilePatch.phone = payload.phone;
+    if (payload.email !== undefined && payload.email !== current.user.email) profilePatch.email = payload.email;
     if (Object.keys(profilePatch).length) {
       await dataRequest(`profiles?id=eq.${encodeURIComponent(current.user.id)}`, {
         method: 'PATCH',

@@ -235,7 +235,30 @@
     .icon-button:hover { background: #f1f5f9; border-color: var(--line); color: var(--ink); }
     .icon-button svg { width: 17px; height: 17px; }
     .notification-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); position: absolute; top: 7px; right: 7px; border: 1.5px solid #fff; }
-    .top-avatar { width: 34px; height: 34px; border-radius: 50%; background: #d5e3ff; color: #2659b8; display: grid; place-items: center; font-size: 11px; font-weight: 800; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); }
+    .top-avatar { width: 34px; height: 34px; border-radius: 50%; background: #d5e3ff; color: #2659b8; display: grid; place-items: center; font-size: 11px; font-weight: 800; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+    .topbar-action-wrap { position: relative; display: inline-flex; align-items: center; }
+    .dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 25px -5px rgba(15,23,42,.15), 0 8px 10px -6px rgba(15,23,42,.1); z-index: 1000; width: 260px; padding: 6px; }
+    .dropdown-menu[hidden] { display: none !important; }
+    .dropdown-header { padding: 10px 12px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+    .dropdown-header strong { display: block; font-size: 13px; color: var(--ink); font-weight: 700; }
+    .dropdown-header span { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; word-break: break-all; }
+    .dropdown-header .badge { display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: var(--blue-soft); color: var(--blue); text-transform: uppercase; letter-spacing: .05em; }
+    .dropdown-divider { height: 1px; background: var(--line); margin: 4px 0; }
+    .dropdown-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; border: none; background: transparent; color: var(--ink-2); font-size: 12px; font-weight: 600; cursor: pointer; text-align: left; transition: background .12s ease; }
+    .dropdown-item:hover { background: #f1f5f9; color: var(--ink); }
+    .dropdown-item svg { width: 15px; height: 15px; color: #64748b; flex-shrink: 0; }
+    .dropdown-item.danger { color: var(--red); }
+    .dropdown-item.danger svg { color: var(--red); }
+    .dropdown-item.danger:hover { background: var(--red-soft); }
+    .notif-dropdown { width: 320px; }
+    .notif-item { padding: 10px 12px; border-radius: 6px; display: flex; gap: 10px; align-items: flex-start; cursor: pointer; transition: background .12s ease; text-decoration: none; border-bottom: 1px solid #f1f5f9; }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item:hover { background: #f8fafc; }
+    .notif-icon { width: 28px; height: 28px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); display: grid; place-items: center; flex-shrink: 0; margin-top: 2px; }
+    .notif-icon.amber { background: var(--amber-soft); color: var(--amber); }
+    .notif-body strong { display: block; font-size: 11.5px; color: var(--ink); font-weight: 650; line-height: 1.3; }
+    .notif-body span { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+    .auth-form-note.error { color: var(--red); }
 
     .content { width: 100%; max-width: 1510px; margin: 0 auto; padding: 31px 34px 56px; }
     .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
@@ -1032,7 +1055,6 @@
           <div class="progress"><span style="width:72%"></span></div>
           <div style="font-size:9px;color:#91a5c1;margin-top:7px">3 tasks left to go live</div>
         </div>
-        <div class="account-mini"><div class="avatar">AR</div><div class="account-info"><strong>Aditi Rao</strong><span>Fleet owner · Online</span></div><button class="account-exit" id="logoutBtn" title="Sign out" aria-label="Sign out"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-5"/></svg></button></div>
       </div>
     </aside>
 
@@ -1044,8 +1066,68 @@
         <div class="topbar-spacer"></div>
         <button class="branch-select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V6l7-3 7 3v15M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/></svg>Mumbai · Main branch<svg style="color:#9ba9b9;width:11px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
         <button class="icon-button" id="helpBtn" aria-label="Help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.4 2.4 0 1 1 4.3 1.5c-.9 1.1-2 1.3-2 2.8M12 17h.01"/></svg></button>
-        <button class="icon-button" id="notificationsBtn" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg><i class="notification-dot"></i></button>
-        <button class="top-avatar" id="profileBtn">AR</button>
+        <div class="topbar-action-wrap">
+          <button class="icon-button" id="notificationsBtn" aria-label="Notifications" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg><i class="notification-dot"></i></button>
+          <div class="dropdown-menu notif-dropdown" id="notificationsMenu" hidden>
+            <div class="dropdown-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <strong>Notifications</strong>
+                <span>Live operational alerts</span>
+              </div>
+              <span class="badge" style="background:#fee2e2;color:#ef4444;font-size:9px">3 Alert</span>
+            </div>
+            <div id="notifList">
+              <div class="notif-item" data-notif-action="duties">
+                <span class="notif-icon amber"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+                <div class="notif-body">
+                  <strong>6 duties need allotment</strong>
+                  <span>Afternoon shifts pending driver assignment</span>
+                </div>
+              </div>
+              <div class="notif-item" data-notif-action="fleet">
+                <span class="notif-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                <div class="notif-body">
+                  <strong>Document renewal notice</strong>
+                  <span>KA01-MJ-4392 insurance expires in 6 days</span>
+                </div>
+              </div>
+              <div class="notif-item" data-notif-action="bookings">
+                <span class="notif-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+                <div class="notif-body">
+                  <strong>New corporate booking</strong>
+                  <span>Infosys guest pickup requested at BLR Airport</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-action-wrap">
+          <button class="top-avatar" id="profileBtn" aria-haspopup="true" aria-expanded="false">AR</button>
+          <div class="dropdown-menu profile-dropdown" id="profileMenu" hidden>
+            <div class="dropdown-header">
+              <strong id="menuUserName">User Name</strong>
+              <span id="menuUserEmail">user@company.com</span>
+              <span class="badge" id="menuUserRole">Fleet Owner</span>
+            </div>
+            <button class="dropdown-item" id="menuProfileBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              My Profile &amp; Security
+            </button>
+            <button class="dropdown-item" id="menuSettingsBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Workspace Settings
+            </button>
+            <button class="dropdown-item" id="menuTourBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Product Tour
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item danger" id="profileLogoutBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Sign out
+            </button>
+          </div>
+        </div>
       </header>
       <div id="content" class="content"></div>
     </main>
@@ -1157,7 +1239,7 @@
     const state = { page: 'overview', dutyFilter: 'All duties', dutyView: 'table', selectedDuties: new Set(), selectedMasters: new Set(), dutyQuery: '', bookingQuery: '', invoiceQuery: '', driverQuery: '', masterSection: 'home', masterQuery: '', vehicleQuery: '', vehicleStatus: 'all', toastTimer: null, lastAuditReference: '', liveData: null, masterData: {}, networkData: {}, extendedData: {}, phase12Data: {}, phase3Data: {}, hydration: { status: 'idle', error: '' }, commandIndex: 0 };
     const content = document.getElementById('content');
     const topbarTitle = document.getElementById('topbarTitle');
-    const navTitles = { overview:'Operations overview', duties:'Duties board', planning:'Route planning', bookings:'Bookings inbox', billing:'Billing & receipts', fleet:'Drivers & vehicles', masters:'Masters & setup', customers:'Customers & pricing', reports:'Reports & analytics', phase3:'Axiom intelligence', finance:'Finance controls', network:'Network & partners', safety:'Safety centre', admin:'Admin health', security:'Security & privacy', driver:'Driver app mode', passenger:'Passenger view', settings:'Workspace settings' };
+    const navTitles = { overview:'Operations overview', profile:'User profile & security', duties:'Duties board', planning:'Route planning', bookings:'Bookings inbox', billing:'Billing & receipts', fleet:'Drivers & vehicles', masters:'Masters & setup', customers:'Customers & pricing', reports:'Reports & analytics', phase3:'Axiom intelligence', finance:'Finance controls', network:'Network & partners', safety:'Safety centre', admin:'Admin health', security:'Security & privacy', driver:'Driver app mode', passenger:'Passenger view', settings:'Workspace settings' };
     const advancedPages = new Set(['customers','reports','phase3','finance','network','admin','security','driver','passenger','settings']);
     let advancedNavOpen = false;
 
@@ -1177,6 +1259,23 @@
     function formatDate(value) { return formatDateTime(value, { dateStyle: 'medium' }); }
     function formatLegacyDate(value) { if (!value) return '—'; const raw=String(value); const parsed=/^\d{1,2} [A-Za-z]{3} \d{4}$/.test(raw) ? new Date(`${raw} 12:00:00`) : new Date(raw); return Number.isNaN(parsed.getTime()) ? raw : formatDate(parsed.toISOString()); }
     function formatTime(value) { return formatDateTime(value, { hour: '2-digit', minute: '2-digit' }); }
+    function getGreeting(name) {
+      const tz = regionalSettings().timezone || 'UTC';
+      let hour;
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: tz });
+        hour = parseInt(formatter.format(new Date()), 10);
+      } catch (_) {
+        hour = new Date().getHours();
+      }
+      let timeOfDay = 'Good morning';
+      if (hour >= 12 && hour < 17) {
+        timeOfDay = 'Good afternoon';
+      } else if (hour >= 17 || hour < 4) {
+        timeOfDay = 'Good evening';
+      }
+      return name ? `${timeOfDay}, ${name}` : timeOfDay;
+    }
     function liveStatus(statusValue) { const map={draft:'Unallotted',assigned:'Confirmed',accepted:'Confirmed',en_route:'In progress',started:'In progress',paused:'In progress',completed:'Completed',cancelled:'Cancelled',requested:'Requested',approved:'Approved',confirmed:'Confirmed',in_progress:'In progress'}; return map[statusValue] || statusValue || 'Requested'; }
     function liveTone(statusValue) { return ['started','paused','en_route','in_progress','completed'].includes(statusValue) ? 'green' : ['cancelled','disputed'].includes(statusValue) ? 'red' : ['requested','draft'].includes(statusValue) ? 'amber' : 'blue'; }
     function dutyRowsForDisplay() {
@@ -1239,7 +1338,7 @@
       topbarTitle.textContent = navTitles[state.page] || 'Operations overview';
       document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.page === state.page));
       syncAdvancedNavigation();
-      const pages = { overview: currentUser?.role === 'corporate' ? renderCorporateOverview : renderOverview, duties: renderDuties, planning: renderPlanning, bookings: renderBookings, billing: renderBilling, fleet: renderFleet, masters: renderMasters, customers: renderCustomers, reports: renderReports, phase3: renderPhase3, finance: renderFinance, network: renderNetwork, safety: renderSafety, admin: renderAdmin, security: renderSecurity, driver: renderDriver, passenger: renderPassenger, settings: renderSettings };
+      const pages = { overview: currentUser?.role === 'corporate' ? renderCorporateOverview : renderOverview, profile: renderProfile, duties: renderDuties, planning: renderPlanning, bookings: renderBookings, billing: renderBilling, fleet: renderFleet, masters: renderMasters, customers: renderCustomers, reports: renderReports, phase3: renderPhase3, finance: renderFinance, network: renderNetwork, safety: renderSafety, admin: renderAdmin, security: renderSecurity, driver: renderDriver, passenger: renderPassenger, settings: renderSettings };
       content.innerHTML = (pages[state.page] || renderOverview)();
       attachPageEvents();
       decorateResponsiveTables();
@@ -1255,6 +1354,79 @@
     }
 
     function pageHead(eyebrow, title, desc, actions='') { return `<div class="page-head"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1><p>${desc}</p></div><div class="head-actions">${actions}</div></div>`; }
+
+    function renderProfile() {
+      const user = currentUser || {};
+      const initials = (user.full_name || 'User').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'U';
+      const roleName = ROLE_LABELS[user.role] || user.role || 'Operator';
+      return `
+        ${pageHead('Account settings · security & profile', 'User Profile', 'Manage your credentials, authenticated email address, and personal information.', '')}
+        <div class="grid two-col" style="align-items:start">
+          <section class="card section-card">
+            ${cardHead('Personal Details', 'Basic information displayed across your workspace')}
+            <div class="card-body">
+              <form id="profile-info-form">
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+                  <div class="avatar" style="width:48px;height:48px;font-size:16px;">${esc(initials)}</div>
+                  <div>
+                    <strong style="display:block;font-size:14px;color:var(--ink)">${esc(user.full_name || 'Operator')}</strong>
+                    <span class="status blue" style="margin-top:4px">${esc(roleName)}</span>
+                  </div>
+                </div>
+                <div class="form-grid">
+                  <div class="form-group full">
+                    <label>Full Name <span class="required">*</span></label>
+                    <input class="form-input" id="profile-name" name="full_name" value="${esc(user.full_name || '')}" placeholder="Your Full Name" required>
+                  </div>
+                  <div class="form-group">
+                    <label>Phone Number</label>
+                    <input class="form-input" id="profile-phone" name="phone" value="${esc(user.phone || '')}" placeholder="+91 98765 43210">
+                  </div>
+                  <div class="form-group">
+                    <label>Operating City</label>
+                    <input class="form-input" id="profile-city" name="city" value="${esc(user.profile?.city || user.organization?.city || '')}" placeholder="City">
+                  </div>
+                  ${user.organization?.name ? `
+                  <div class="form-group full">
+                    <label>Organization</label>
+                    <input class="form-input" value="${esc(user.organization.name)}" disabled style="background:#f8fafc;color:var(--muted)">
+                  </div>` : ''}
+                  <div class="form-group full" style="margin-top:8px">
+                    <button type="submit" class="btn primary" id="save-profile-info-btn">Save Personal Details</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <section class="card section-card">
+            ${cardHead('Email & Security', 'Update your login email and workspace password')}
+            <div class="card-body">
+              <form id="profile-security-form">
+                <div class="form-grid">
+                  <div class="form-group full">
+                    <label>Email Address <span class="required">*</span></label>
+                    <input class="form-input" id="profile-email" name="email" type="email" value="${esc(user.email || '')}" placeholder="you@company.com" required>
+                    <span class="form-help">Temporary or disposable emails are blocked. Please use an authenticated business or personal address.</span>
+                  </div>
+                  <div class="form-group full" style="border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+                    <label>New Password (leave blank to keep current)</label>
+                    <input class="form-input" id="profile-password" name="password" type="password" minlength="8" placeholder="Minimum 8 characters" autocomplete="new-password">
+                  </div>
+                  <div class="form-group full">
+                    <label>Confirm New Password</label>
+                    <input class="form-input" id="profile-confirm-password" name="confirm_password" type="password" minlength="8" placeholder="Re-enter new password" autocomplete="new-password">
+                  </div>
+                  <div class="form-group full" style="margin-top:8px">
+                    <button type="submit" class="btn primary" id="save-profile-security-btn">Update Credentials</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+      `;
+    }
 
     function renderCorporateOverview() {
       const requests=(state.liveData?.bookings?.items||[]).filter(item=>['requested','approved'].includes(item.status)); const report=state.liveData?.reports?.summary||{}; const invoiceTotal=Object.values(report.invoices||{}).reduce((sum,item)=>sum+Number(item.total_paise||0),0); return `${pageHead('Corporate travel · policy-aware','Travel control center','Request, approve and verify every journey without losing the passenger context.',`${button(icon('plus')+'Request a booking','primary','data-action="new-booking"')}${button(icon('users')+'Employees','','data-page-link="customers"')}`)}<div class="grid kpis"><div class="card kpi amber"><div class="kpi-top"><span class="kpi-label">Pending approvals</span><span class="kpi-icon amber">${icon('clock')}</span></div><div class="kpi-value">${requests.length}</div><div class="kpi-foot">Policy decisions waiting</div></div><div class="card kpi teal"><div class="kpi-top"><span class="kpi-label">Trips this period</span><span class="kpi-icon teal">${icon('route')}</span></div><div class="kpi-value">${Object.values(report.duties||{}).reduce((sum,value)=>sum+Number(value||0),0)}</div><div class="kpi-foot"><span class="trend up">Live</span> across suppliers</div></div><div class="card kpi"><div class="kpi-top"><span class="kpi-label">Tracked spend</span><span class="kpi-icon">${icon('wallet')}</span></div><div class="kpi-value">${formatAmount(invoiceTotal/100)}</div><div class="kpi-foot">Tenant-scoped invoice value</div></div><div class="card kpi red"><div class="kpi-top"><span class="kpi-label">Policy exceptions</span><span class="kpi-icon red">${icon('warning')}</span></div><div class="kpi-value">0</div><div class="kpi-foot">No unresolved exceptions</div></div></div><div class="grid two-col"><section class="card section-card">${cardHead('Approval queue','Requests that need a travel desk decision')}<div class="table-wrap"><table><thead><tr><th>Request</th><th>Passenger</th><th>Route</th><th>When</th><th></th></tr></thead><tbody>${requests.length?requests.map(item=>`<tr><td><div class="table-id">${esc(item.booking_reference||item.id)}</div><div class="table-secondary">${esc(item.duty_type||'Duty')}</div></td><td><div class="table-primary">${esc(item.passenger_name||'Passenger')}</div><div class="table-secondary">${esc(item.passenger_phone||'Contact on file')}</div></td><td>${esc(item.pickup?.label||'Pickup')} → ${esc(item.dropoff?.label||'Drop')}</td><td>${item.scheduled_at?formatDateTime(item.scheduled_at):'Flexible'}</td><td><div class="row-actions"><button class="btn small soft" data-corp-approve="${esc(item.id)}">Approve</button><button class="btn small" data-corp-reject="${esc(item.id)}">Decline</button></div></td></tr>`).join(''):`<tr><td colspan="5"><div class="table-empty"><strong>Approval queue is clear</strong>New employee requests will appear here.</div></td></tr>`}</tbody></table></div></section><section class="card section-card">${cardHead('Travel guardrails','Active policy and employee context')}<div class="card-body"><div class="attention-list"><div class="attention-item"><span class="attention-icon teal">${icon('shield')}</span><div class="attention-main"><strong>${esc(regionalSettings().name || 'Regional')} travel policy</strong><span>Approved vehicle groups and spend caps are active.</span></div><span class="status green">Active</span></div><div class="attention-item"><span class="attention-icon blue">${icon('users')}</span><div class="attention-main"><strong>${state.liveData?.customers?.count||0} vendor accounts connected</strong><span>Supplier access is scoped to approved bookings.</span></div></div><div class="attention-item"><span class="attention-icon amber">${icon('file')}</span><div class="attention-main"><strong>Invoice verification</strong><span>Proof packs are required before acceptance.</span></div></div></div></div></section></div>`;
@@ -1274,8 +1446,10 @@
         { icon:'wallet', tone:'blue', title:formatAmount(180000)+' in overdue receivables', copy:'3 invoices past due · oldest is 8 days late', action:'View aging' }
       ];
       const checklist=state.liveData?.onboarding||state.liveData?.checklist; const setupBanner=checklist && checklist.completed<checklist.total ? `<div class="card" style="margin-bottom:16px;padding:13px 16px;display:flex;align-items:center;gap:14px;border-color:#d6e3fb;background:#f7faff"><span class="kpi-icon">${icon('spark')}</span><div style="flex:1"><strong style="font-size:11px">Workspace setup · ${checklist.completed}/${checklist.total} complete</strong><div style="font-size:10px;color:var(--muted);margin-top:3px">Finish the checklist before inviting your first live customer.</div></div><button class="btn small soft" data-action="setup-checklist">Open checklist</button></div>` : '';
+      const userFirstName = currentUser?.full_name ? currentUser.full_name.split(/\s+/)[0] : 'Operator';
+      const greeting = getGreeting(userFirstName);
       return `
-        ${pageHead(formatDate(new Date()) + ' · ' + (regionalSettings().name || 'Tenant operations'), 'Good morning, Aditi', 'Your fleet is moving well. Here is the live picture across today’s operations.', `${button(icon('refresh')+'Refresh', '', 'data-action="refresh"')}${button(icon('plus')+'New booking', 'primary', 'data-action="new-booking"')}`)}
+        ${pageHead(formatDate(new Date()) + ' · ' + (regionalSettings().name || 'Tenant operations'), greeting, 'Your fleet is moving well. Here is the live picture across today’s operations.', `${button(icon('refresh')+'Refresh', '', 'data-action="refresh"')}${button(icon('plus')+'New booking', 'primary', 'data-action="new-booking"')}`)}
         ${setupBanner}<section class="command-path" aria-label="Recommended next steps"><div class="command-path-head"><strong>Today’s operating path</strong><span>Three moves to keep the day moving</span></div><div class="command-path-grid"><button class="command-step" data-action="new-booking"><span class="step-number">1</span><span><strong>Capture the next booking</strong><span>Start with the route and passenger.</span></span></button><button class="command-step" data-page-link="duties"><span class="step-number">2</span><span><strong>Clear the duty queue</strong><span>Allot the next unassigned run.</span></span></button><button class="command-step" data-page-link="driver"><span class="step-number">3</span><span><strong>Check field readiness</strong><span>Confirm sync, proof and safety.</span></span></button></div></section><section class="pulse-hero">
           <div class="pulse-copy">
             <div class="pulse-kicker"><i class="pulse"></i> Live operations · shift 01</div>
@@ -1300,7 +1474,7 @@
           <section class="card section-card">${cardHead('Today’s run sheet','Next dispatches across Mumbai and Bengaluru', '<button class="link" data-page-link="duties">Open board →</button>')}<div class="card-body"><div class="run-sheet"><div class="run-row"><span class="run-time">08:00</span><i class="run-dot amber"></i><div class="run-copy"><strong>Mosaic Finance · Priya Menon</strong><span>BKC → Airport T2 · unallotted</span></div><span class="run-status" style="background:var(--amber-soft);color:#a86c11">Needs allotment</span></div><div class="run-row"><span class="run-time">08:15</span><i class="run-dot"></i><div class="run-copy"><strong>BluePeak Consulting · Vivek Shah</strong><span>Indiranagar → Electronic City · Ramesh S.</span></div><span class="run-status" style="background:var(--blue-soft);color:#2e63cf">Dispatched</span></div><div class="run-row"><span class="run-time">08:30</span><i class="run-dot green"></i><div class="run-copy"><strong>Orchid Retail · Nisha Kapoor</strong><span>Andheri East → Powai · Suresh P.</span></div><span class="run-status" style="background:var(--teal-soft);color:#188260">Confirmed</span></div><div class="run-row"><span class="run-time">09:00</span><i class="run-dot"></i><div class="run-copy"><strong>NorthStar Technologies · Ankit S.</strong><span>Whitefield → Airport T2 · Anil V.</span></div><span class="run-status" style="background:#eef2f6;color:#6d7b8d">Completed</span></div></div></div></section>
           <section class="card section-card">${cardHead('Quick actions','Common tasks for your operations team')}<div class="card-body"><div class="quick-grid"><button class="quick-action" data-action="new-booking"><span class="q-icon">${icon('plus')}</span><strong>New booking</strong><span>Capture a duty</span></button><button class="quick-action" data-action="import"><span class="q-icon">${icon('upload')}</span><strong>Import duties</strong><span>CSV or email</span></button><button class="quick-action" data-page-link="billing"><span class="q-icon">${icon('file')}</span><strong>Build invoice</strong><span>Period billing</span></button><button class="quick-action" data-action="workflow-center"><span class="q-icon">${icon('spark')}</span><strong>Workflow center</strong><span>Finance, network &amp; controls</span></button></div></div></section>
         </div>
-        <section class="card section-card">${cardHead('Recent activity','The last changes across your workspace', '<button class="link" data-action="activity">View audit trail →</button>')}<div class="table-wrap"><table><thead><tr><th>Time</th><th>Activity</th><th>Actor</th><th>Reference</th><th>Status</th></tr></thead><tbody><tr><td class="table-secondary">08:42</td><td><div class="table-primary">Duty completed</div><div class="table-secondary">Anil V. submitted slip with 43.2 km</div></td><td>Aditi Rao</td><td class="table-id">DUT-24095</td><td>${status('Synced','green')}</td></tr><tr><td class="table-secondary">08:36</td><td><div class="table-primary">Invoice dispatched</div><div class="table-secondary">WhatsApp + email sent to finance@northstar.in</div></td><td>Billing bot</td><td class="table-id">INV-2026-084</td><td>${status('Delivered','green')}</td></tr><tr><td class="table-secondary">08:31</td><td><div class="table-primary">Driver reassigned</div><div class="table-secondary">Old: Ramesh S. · New: Suresh P.</div></td><td>Aditi Rao</td><td class="table-id">DUT-24094</td><td>${status('Audited','blue')}</td></tr></tbody></table></div></section>
+        <section class="card section-card">${cardHead('Recent activity','The last changes across your workspace', '<button class="link" data-action="activity">View audit trail →</button>')}<div class="table-wrap"><table><thead><tr><th>Time</th><th>Activity</th><th>Actor</th><th>Reference</th><th>Status</th></tr></thead><tbody><tr><td class="table-secondary">08:42</td><td><div class="table-primary">Duty completed</div><div class="table-secondary">Anil V. submitted slip with 43.2 km</div></td><td>${esc(currentUser?.full_name || 'Operator')}</td><td class="table-id">DUT-24095</td><td>${status('Synced','green')}</td></tr><tr><td class="table-secondary">08:36</td><td><div class="table-primary">Invoice dispatched</div><div class="table-secondary">WhatsApp + email sent to finance@northstar.in</div></td><td>Billing bot</td><td class="table-id">INV-2026-084</td><td>${status('Delivered','green')}</td></tr><tr><td class="table-secondary">08:31</td><td><div class="table-primary">Driver reassigned</div><div class="table-secondary">Old: Ramesh S. · New: Suresh P.</div></td><td>${esc(currentUser?.full_name || 'Operator')}</td><td class="table-id">DUT-24094</td><td>${status('Audited','blue')}</td></tr></tbody></table></div></section>
       `;
     }
 
@@ -1633,6 +1807,66 @@
       content.querySelectorAll('[data-corp-reject]').forEach(el => el.addEventListener('click', async () => { try { await apiRequest(`/api/bookings/${el.dataset.corpReject}/reject`,{method:'POST',body:JSON.stringify({comment:'Declined by travel desk'})}); showToast('Booking declined','The requester will see the decision in their trip history.'); await hydrateOperationalData(); } catch(error) { showToast('Decline failed',error.message); } }));
       content.querySelectorAll('.toggle').forEach(el => el.addEventListener('click', () => el.classList.toggle('on')));
       content.querySelectorAll('.tab').forEach(el => { if (!el.dataset.dutyTab) el.addEventListener('click', () => { el.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }); });
+      const infoForm = document.getElementById('profile-info-form');
+      if (infoForm) {
+        infoForm.addEventListener('submit', async e => {
+          e.preventDefault();
+          const btn = document.getElementById('save-profile-info-btn');
+          btn.disabled = true;
+          try {
+            const full_name = document.getElementById('profile-name').value.trim();
+            const phone = document.getElementById('profile-phone').value.trim();
+            const city = document.getElementById('profile-city').value.trim();
+            if (!full_name) throw new Error('Please enter your full name.');
+            const res = await apiRequest('/api/auth/me', {
+              method: 'PATCH',
+              body: JSON.stringify({ full_name, phone, city })
+            });
+            applyCurrentUser(res.user);
+            showToast('Profile updated', 'Your personal details have been saved.');
+            render();
+          } catch (err) {
+            showToast('Update failed', err.message);
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      }
+      const secForm = document.getElementById('profile-security-form');
+      if (secForm) {
+        secForm.addEventListener('submit', async e => {
+          e.preventDefault();
+          const btn = document.getElementById('save-profile-security-btn');
+          btn.disabled = true;
+          try {
+            const email = document.getElementById('profile-email').value.trim().toLowerCase();
+            const password = document.getElementById('profile-password').value;
+            const confirm = document.getElementById('profile-confirm-password').value;
+            if (!email) throw new Error('Email address is required.');
+            if (isDisposableEmail(email)) {
+              throw new Error('Temporary or disposable email addresses are not permitted.');
+            }
+            if (password) {
+              if (password.length < 8) throw new Error('Password must be at least 8 characters.');
+              if (password !== confirm) throw new Error('Passwords do not match.');
+            }
+            const patch = { email };
+            if (password) patch.password = password;
+            const res = await apiRequest('/api/auth/me', {
+              method: 'PATCH',
+              body: JSON.stringify(patch)
+            });
+            applyCurrentUser(res.user);
+            document.getElementById('profile-password').value = '';
+            document.getElementById('profile-confirm-password').value = '';
+            showToast('Credentials updated', 'Your email and security settings have been saved.');
+          } catch (err) {
+            showToast('Update failed', err.message);
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      }
     }
 
     function renderDutiesInPlace() { const old = content.innerHTML; render(); const input = document.getElementById('dutyQuery'); if (input) { input.focus(); input.setSelectionRange(input.value.length,input.value.length); } }
@@ -1865,7 +2099,7 @@
       const displayDuties = dutyRowsForDisplay(); const d = displayDuties.find(x=>x.id===id) || displayDuties[0];
       const isUn = d.status==='Unallotted';
       const drawer = document.getElementById('drawer');
-      drawer.innerHTML = `<div class="drawer-head"><div><div class="eyebrow" style="margin-bottom:3px">Duty detail · ${d.city}</div><h2>${d.id}</h2><p>${d.customer} · ${d.passenger}</p></div><button class="drawer-close" type=\"button\" aria-label=\"Close detail\" data-close-drawer>${icon('x')}</button></div><div class="drawer-content"><div class="detail-status"><div><span class="detail-label">Current status</span><strong>${status(d.status,d.tone)}</strong></div><div style="text-align:right"><span class="detail-label">Customer value</span><strong>${d.amount}</strong></div></div><div class="detail-section"><h4>Route &amp; reporting</h4><div class="route-strip"><span class="route-node"></span><div class="route-copy"><strong>${d.route.split(' → ')[0]}</strong><span>${d.time} · Reporting point</span></div></div><div class="route-strip" style="padding-top:0"><div class="route-connector"></div><div></div></div><div class="route-strip" style="padding-top:0"><span class="route-node end"></span><div class="route-copy"><strong>${d.route.split(' → ')[1]}</strong><span>${d.type} · destination</span></div></div></div><div class="detail-section"><h4>Assignment</h4><div class="detail-grid"><div class="detail-field"><label>Driver</label><strong>${d.resource}</strong></div><div class="detail-field"><label>Vehicle</label><strong>${d.vehicle}</strong></div><div class="detail-field"><label>Tracking</label><strong>${d.status==='In progress'?'Live · 32 sec ago':'Not started'}</strong></div><div class="detail-field"><label>Source</label><strong>Dashboard</strong></div></div></div><div class="detail-section"><h4>Calculation preview</h4><div class="breakdown"><div class="breakdown-row"><span>Package · ${d.type.includes('4h')?'4h / 40km':'8h / 80km'}</span><strong>${d.amount}</strong></div><div class="breakdown-row"><span>Estimated extra km</span><span>${formatAmount(0)}</span></div><div class="breakdown-row"><span>${regionalTaxLabel()} included</span><span>${regionalTaxLabel()}</span></div><div class="breakdown-row total"><span>Customer will be billed</span><strong>${d.amount}</strong></div></div><div style="color:var(--muted-2);font-size:9.5px;margin-top:7px">Price book: ${d.customer} · Bengaluru · effective 01 Sep 2026</div></div><div class="detail-section"><h4>Timeline</h4><div class="timeline"><div class="timeline-item"><span class="timeline-time">${d.time}</span><i class="timeline-dot"></i><div class="timeline-copy"><strong>Booking confirmed</strong><span>Created from dashboard by Aditi Rao</span></div></div><div class="timeline-item"><span class="timeline-time">${d.status==='Unallotted'?'—':'+'+(d.status==='In progress'?'00:04':'00:12')}</span><i class="timeline-dot ${d.status==='Unallotted'?'gray':''}"></i><div class="timeline-copy"><strong>${d.status==='Unallotted'?'Waiting for allotment':d.status==='In progress'?'Duty started':'Driver dispatched'}</strong><span>${d.status==='Unallotted'?'Attention queue · due in 1h 48m':'Driver app event · audit logged'}</span></div></div><div class="timeline-item"><span class="timeline-time">Next</span><i class="timeline-dot gray"></i><div class="timeline-copy"><strong>Complete duty</strong><span>Driver submits odometer, proofs and signature</span></div></div></div></div></div><div class="drawer-footer">${button(icon('phone')+'Call', '')}${isUn?button(icon('car')+'Allot driver','primary','data-action="drawer-allot"'):button(icon('edit')+'Edit duty','soft','data-action="drawer-edit"')}</div>`;
+      drawer.innerHTML = `<div class="drawer-head"><div><div class="eyebrow" style="margin-bottom:3px">Duty detail · ${d.city}</div><h2>${d.id}</h2><p>${d.customer} · ${d.passenger}</p></div><button class="drawer-close" type=\"button\" aria-label=\"Close detail\" data-close-drawer>${icon('x')}</button></div><div class="drawer-content"><div class="detail-status"><div><span class="detail-label">Current status</span><strong>${status(d.status,d.tone)}</strong></div><div style="text-align:right"><span class="detail-label">Customer value</span><strong>${d.amount}</strong></div></div><div class="detail-section"><h4>Route &amp; reporting</h4><div class="route-strip"><span class="route-node"></span><div class="route-copy"><strong>${d.route.split(' → ')[0]}</strong><span>${d.time} · Reporting point</span></div></div><div class="route-strip" style="padding-top:0"><div class="route-connector"></div><div></div></div><div class="route-strip" style="padding-top:0"><span class="route-node end"></span><div class="route-copy"><strong>${d.route.split(' → ')[1]}</strong><span>${d.type} · destination</span></div></div></div><div class="detail-section"><h4>Assignment</h4><div class="detail-grid"><div class="detail-field"><label>Driver</label><strong>${d.resource}</strong></div><div class="detail-field"><label>Vehicle</label><strong>${d.vehicle}</strong></div><div class="detail-field"><label>Tracking</label><strong>${d.status==='In progress'?'Live · 32 sec ago':'Not started'}</strong></div><div class="detail-field"><label>Source</label><strong>Dashboard</strong></div></div></div><div class="detail-section"><h4>Calculation preview</h4><div class="breakdown"><div class="breakdown-row"><span>Package · ${d.type.includes('4h')?'4h / 40km':'8h / 80km'}</span><strong>${d.amount}</strong></div><div class="breakdown-row"><span>Estimated extra km</span><span>${formatAmount(0)}</span></div><div class="breakdown-row"><span>${regionalTaxLabel()} included</span><span>${regionalTaxLabel()}</span></div><div class="breakdown-row total"><span>Customer will be billed</span><strong>${d.amount}</strong></div></div><div style="color:var(--muted-2);font-size:9.5px;margin-top:7px">Price book: ${d.customer} · Bengaluru · effective 01 Sep 2026</div></div><div class="detail-section"><h4>Timeline</h4><div class="timeline"><div class="timeline-item"><span class="timeline-time">${d.time}</span><i class="timeline-dot"></i><div class="timeline-copy"><strong>Booking confirmed</strong><span>Created from dashboard by ${esc(currentUser?.full_name || 'Operator')}</span></div></div><div class="timeline-item"><span class="timeline-time">${d.status==='Unallotted'?'—':'+'+(d.status==='In progress'?'00:04':'00:12')}</span><i class="timeline-dot ${d.status==='Unallotted'?'gray':''}"></i><div class="timeline-copy"><strong>${d.status==='Unallotted'?'Waiting for allotment':d.status==='In progress'?'Duty started':'Driver dispatched'}</strong><span>${d.status==='Unallotted'?'Attention queue · due in 1h 48m':'Driver app event · audit logged'}</span></div></div><div class="timeline-item"><span class="timeline-time">Next</span><i class="timeline-dot gray"></i><div class="timeline-copy"><strong>Complete duty</strong><span>Driver submits odometer, proofs and signature</span></div></div></div></div></div><div class="drawer-footer">${button(icon('phone')+'Call', '')}${isUn?button(icon('car')+'Allot driver','primary','data-action="drawer-allot"'):button(icon('edit')+'Edit duty','soft','data-action="drawer-edit"')}</div>`;
       drawer.dataset.dutyId = id; openDrawer();
       drawer.querySelector('[data-close-drawer]').addEventListener('click', closeDrawer);
       drawer.querySelectorAll('[data-action="drawer-allot"]').forEach(b=>b.addEventListener('click',()=>{closeDrawer();openAllotModal([id]);}));
@@ -2072,12 +2306,18 @@
       if (user?.role === 'driver') { state.page = 'driver'; advancedNavOpen = true; }
       else if (state.page === 'driver') state.page = 'overview';
       if (!user) return;
-      const initials = user.full_name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+      const initials = (user.full_name || 'AF').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
       document.querySelectorAll('.avatar,.top-avatar').forEach(el => { el.textContent = initials || 'AF'; });
       const accountName = document.querySelector('.account-info strong');
       const accountRole = document.querySelector('.account-info span');
       if (accountName) accountName.textContent = user.full_name;
       if (accountRole) accountRole.textContent = `${ROLE_LABELS[user.role] || user.role} · Online`;
+      const menuUserName = document.getElementById('menuUserName');
+      const menuUserEmail = document.getElementById('menuUserEmail');
+      const menuUserRole = document.getElementById('menuUserRole');
+      if (menuUserName) menuUserName.textContent = user.full_name || 'Operator';
+      if (menuUserEmail) menuUserEmail.textContent = user.email || '';
+      if (menuUserRole) menuUserRole.textContent = ROLE_LABELS[user.role] || user.role || 'Member';
       const crumb = document.querySelector('.topbar-title .crumb span:first-child');
       const city = document.querySelector('.topbar-title .crumb span:last-child');
       if (crumb) crumb.textContent = `${ROLE_LABELS[user.role] || user.role} console`;
@@ -2255,6 +2495,56 @@
       else if (publicPageTemplates[route]) showPublicPage(route, false);
       else if (route === 'home' || route === '') showPublic(false);
     });
+    const DISPOSABLE_EMAIL_DOMAINS = new Set([
+      'mailinator.com', 'tempmail.com', 'temp-mail.org', '10minutemail.com',
+      'guerrillamail.com', 'throwawaymail.com', 'sharklasers.com', 'yopmail.com',
+      'getairmail.com', 'dispostable.com', 'trashmail.com', 'fakeinbox.com',
+      'mytemp.email', 'tempail.com', 'mohmal.com', 'burnermail.io',
+      'crazymailing.com', 'generator.email', 'inboxkitten.com', 'dropmail.me',
+      'tempinbox.com', 'disposablemail.com', 'emailondeck.com', 'guerrillamail.biz',
+      'guerrillamail.net', 'guerrillamail.org', 'guerrillamailblock.com', 'pokemail.net',
+      'spam4.me', 'grr.la', 'tempmail.net', 'tempmailaddress.com', 'fakemailgenerator.com'
+    ]);
+    function isDisposableEmail(email) {
+      if (!email || typeof email !== 'string' || !email.includes('@')) return false;
+      const parts = email.toLowerCase().trim().split('@');
+      if (parts.length !== 2) return false;
+      const domain = parts[1];
+      if (DISPOSABLE_EMAIL_DOMAINS.has(domain)) return true;
+      return /(temp|trash|fake|disposable|throwaway|burner|guerrilla|10minute|mailinator)/i.test(domain);
+    }
+
+    function openForgotPasswordModal() {
+      const currentEmail = document.getElementById('login-email')?.value.trim() || '';
+      const body = `
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Registered Email Address <span class="required">*</span></label>
+            <input class="form-input" id="reset-email" type="email" value="${esc(currentEmail)}" placeholder="you@company.com" required>
+            <span class="form-help">Enter your registered email address. We will send you instructions to recover your password.</span>
+          </div>
+        </div>
+      `;
+      const modal = modalShell('Reset Password', 'Recover your Axiom Fleet account access', body, `${button('Cancel', '', 'data-close-modal')}${button('Send Reset Link', 'primary', 'id="submit-password-reset"')}`);
+      modal.querySelector('#submit-password-reset')?.addEventListener('click', async () => {
+        const email = modal.querySelector('#reset-email')?.value.trim().toLowerCase();
+        if (!email) {
+          showToast('Email required', 'Please enter your registered email address.');
+          return;
+        }
+        const submitBtn = modal.querySelector('#submit-password-reset');
+        submitBtn.disabled = true;
+        try {
+          await apiRequest('/api/auth/password-reset', { method: 'POST', body: JSON.stringify({ email }) });
+          closeModal();
+          showToast('Reset email sent', 'If that address exists, password reset instructions have been sent.');
+        } catch (err) {
+          submitBtn.disabled = false;
+          showToast('Reset failed', err.message);
+        }
+      });
+    }
+
     document.getElementById('login-form').addEventListener('submit', async e => {
       e.preventDefault();
       const email = document.getElementById('login-email').value.trim().toLowerCase();
@@ -2282,6 +2572,11 @@
       const payload = Object.fromEntries(new FormData(form).entries());
       error.className = 'auth-form-note';
       error.textContent = '';
+      if (isDisposableEmail(payload.email)) {
+        error.className = 'auth-form-note error';
+        error.textContent = 'Temporary or disposable email addresses are not permitted. Please use your official or corporate email.';
+        return;
+      }
       submit.disabled = true;
       try {
         const response = await apiRequest('/api/auth/signup', { method: 'POST', body: JSON.stringify(payload) });
@@ -2309,7 +2604,10 @@
       input.type = visible ? 'password' : 'text';
       e.currentTarget.textContent = visible ? 'Show' : 'Hide';
     });
-    document.getElementById('forgot-password').addEventListener('click', async e => { e.preventDefault(); const email=document.getElementById('login-email').value.trim().toLowerCase(); if(!email){showToast('Enter your email first','We need the account email to send a reset link.');return;} try { await apiRequest('/api/auth/password-reset',{method:'POST',body:JSON.stringify({email})}); showToast('Password reset requested','If that address exists, a reset link will be sent shortly.'); } catch(error) { showToast('Password reset unavailable',error.message); } });
+    document.getElementById('forgot-password').addEventListener('click', e => {
+      e.preventDefault();
+      openForgotPasswordModal();
+    });
 
     const impactRange = document.getElementById('impact-range');
     function updateImpact() {
@@ -2334,10 +2632,77 @@
     document.getElementById('advancedNavToggle')?.addEventListener('click',()=>{advancedNavOpen=!advancedNavOpen;syncAdvancedNavigation();});
     document.getElementById('drawerBackdrop').addEventListener('click',closeDrawer); document.getElementById('modalBackdrop').addEventListener('click',e=>{if(e.target.id==='modalBackdrop')closeModal();});
     document.getElementById('mobileMenu').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
-    document.getElementById('notificationsBtn').addEventListener('click',()=>showToast('Notifications','6 duties need allotment before the afternoon run.'));
-    document.getElementById('helpBtn').addEventListener('click',openProductTour);
-    document.getElementById('profileBtn').addEventListener('click',()=>showToast('Aditi Rao','Fleet owner · Mumbai + Bengaluru workspace'));
-    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    const profileBtn = document.getElementById('profileBtn');
+    const profileMenu = document.getElementById('profileMenu');
+    const notifBtn = document.getElementById('notificationsBtn');
+    const notifMenu = document.getElementById('notificationsMenu');
+
+    function closeAllMenus() {
+      if (profileMenu) profileMenu.hidden = true;
+      if (notifMenu) notifMenu.hidden = true;
+      profileBtn?.setAttribute('aria-expanded', 'false');
+      notifBtn?.setAttribute('aria-expanded', 'false');
+    }
+
+    profileBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = profileMenu.hidden;
+      closeAllMenus();
+      if (willOpen) {
+        profileMenu.hidden = false;
+        profileBtn.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    notifBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = notifMenu.hidden;
+      closeAllMenus();
+      if (willOpen) {
+        notifMenu.hidden = false;
+        notifBtn.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.topbar-action-wrap')) {
+        closeAllMenus();
+      }
+    });
+
+    document.getElementById('menuProfileBtn')?.addEventListener('click', () => {
+      closeAllMenus();
+      state.page = 'profile';
+      render();
+    });
+
+    document.getElementById('menuSettingsBtn')?.addEventListener('click', () => {
+      closeAllMenus();
+      state.page = 'settings';
+      render();
+    });
+
+    document.getElementById('menuTourBtn')?.addEventListener('click', () => {
+      closeAllMenus();
+      openProductTour();
+    });
+
+    document.getElementById('profileLogoutBtn')?.addEventListener('click', () => {
+      closeAllMenus();
+      logout();
+    });
+
+    document.querySelectorAll('[data-notif-action]').forEach(item => {
+      item.addEventListener('click', () => {
+        closeAllMenus();
+        state.page = item.dataset.notifAction;
+        render();
+      });
+    });
+
+    document.getElementById('helpBtn')?.addEventListener('click', openProductTour);
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
     document.getElementById('globalSearch').addEventListener('keydown',e=>{if(e.key==='Enter' && e.target.value.trim()){state.page='duties';state.dutyQuery=e.target.value.trim();render();}});
     document.getElementById('commandPaletteClose')?.addEventListener('click', closeCommandPalette);
     document.getElementById('commandPaletteBackdrop')?.addEventListener('click', closeCommandPalette);

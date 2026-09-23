@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -21,7 +22,7 @@ def main() -> None:
         env = os.environ.copy()
         env.update({"PORT": str(port), "AXIOM_DB_PATH": str(Path(temp_dir) / "axiom.sqlite3")})
         process = subprocess.Popen(
-            ["python3", "server.py"],
+            [sys.executable, "server.py"],
             cwd=ROOT,
             env=env,
             stdout=subprocess.PIPE,

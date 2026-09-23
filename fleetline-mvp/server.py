@@ -138,9 +138,35 @@ def optional_int(value: object, field: str, *, maximum: int = 10_000_000) -> int
     return number
 
 
+DISPOSABLE_EMAIL_DOMAINS = {
+    "mailinator.com", "tempmail.com", "temp-mail.org", "10minutemail.com",
+    "guerrillamail.com", "throwawaymail.com", "sharklasers.com", "yopmail.com",
+    "getairmail.com", "dispostable.com", "trashmail.com", "fakeinbox.com",
+    "mytemp.email", "tempail.com", "mohmal.com", "burnermail.io",
+    "crazymailing.com", "generator.email", "inboxkitten.com", "dropmail.me",
+    "tempinbox.com", "disposablemail.com", "emailondeck.com", "guerrillamail.biz",
+    "guerrillamail.net", "guerrillamail.org", "guerrillamailblock.com", "pokemail.net",
+    "spam4.me", "grr.la", "tempmail.net", "tempmailaddress.com", "fakemailgenerator.com"
+}
+
+
+def is_disposable_email(email: str) -> bool:
+    if not email or "@" not in email:
+        return False
+    parts = email.lower().strip().split("@")
+    if len(parts) != 2:
+        return False
+    domain = parts[1]
+    if domain in DISPOSABLE_EMAIL_DOMAINS:
+        return True
+    return bool(re.search(r"(temp|trash|fake|disposable|throwaway|burner|guerrilla|10minute|mailinator)", domain, re.I))
+
+
 def validate_email(email: str) -> None:
     if len(email) > 254 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
         raise APIError(400, "Enter a valid email address", "validation_error")
+    if is_disposable_email(email):
+        raise APIError(400, "Temporary or disposable email addresses are not permitted. Please use your official or corporate email.", "validation_error")
 
 
 def validate_signup(data: dict) -> dict:
@@ -614,6 +640,24 @@ class AxiomFleetHandler(SimpleHTTPRequestHandler):
             if "phone" in data:
                 user_updates.append("phone = ?")
                 user_values.append(clean_text(data.get("phone"), "phone", maximum=32))
+            if "email" in data:
+                new_email = normalize_email(data.get("email"))
+                validate_email(new_email)
+                if new_email != row["email"]:
+                    existing = conn.execute("SELECT 1 FROM users WHERE email = ? AND id != ?", (new_email, user_id)).fetchone()
+                    if existing:
+                        raise APIError(409, "An account with this email already exists", "email_in_use")
+                    user_updates.append("email = ?")
+                    user_values.append(new_email)
+            if "password" in data and data.get("password"):
+                new_pw = str(data["password"])
+                if len(new_pw) < 8:
+                    raise APIError(400, "Password must be at least 8 characters", "validation_error")
+                if len(new_pw) > 128:
+                    raise APIError(400, "Password is too long", "validation_error")
+                salt, password_digest = hash_password(new_pw)
+                user_updates.extend(["password_hash = ?", "password_salt = ?"])
+                user_values.extend([password_digest, salt])
             if user_updates:
                 user_values.append(user_id)
                 conn.execute(f"UPDATE users SET {', '.join(user_updates)} WHERE id = ?", user_values)
