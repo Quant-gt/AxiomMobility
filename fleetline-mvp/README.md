@@ -30,6 +30,7 @@ The private console focuses on the PRD's MVP release gate, **One Fleet Live**:
 - Booking intake with a guided create-booking modal and CSV import flow
 - Billing and receipts with invoice list, collection mix, invoice drawer and async-build workflow
 - Fleet control with drivers, vehicles, compliance watch and capacity snapshot
+- First-class Masters workspace with grouped setup navigation, searchable tenant-scoped registers, mobile-friendly vehicle cards, extended vehicle create/edit fields, supplier and branch registers, duplicate registration protection and CSV vehicle import preview
 - Customers and pricing with customer portfolio and effective-dated price-book table
 - Reports and analytics with revenue trend, duty performance and SLA exception views
 - Finance controls, Network & partners, Admin health, Security & privacy and Passenger view pages backed by the extended API
@@ -42,7 +43,48 @@ The private console focuses on the PRD's MVP release gate, **One Fleet Live**:
 - `USABILITY-IMPROVEMENTS.md` — shipped usability decisions, guided vendor/driver walkthroughs and remaining moderated-test gates
 - `MOBILE-APP-STRATEGY.md` — application count, Driver v1 scope, mobile readiness assessment and phased delivery plan
 - Extended local workflows for tax calculation, approval chains, duty exceptions, passenger access/rating, alerts/geofences, settlements and financial maker-checker
+- P0 control-room surfaces for route planning, dispatch offers/replacements, incident response and policy versioning, with tenant-scoped permission checks and explicit lifecycle actions
+- Phase 1/2 control-room extensions for a unified master registry, roster versions, live ETA/GPS health, safety evidence and closure approvals, Network activation/replacement/scorecard reconciliation, permission bundles, saved views and idempotent bulk actions
+- Mobile Operations home contracts are shared by the web driver mode, dependency-free Driver PWA and React Native Driver surface; forms use visible sections, sticky actions and offline-safe replay
 - Mock-first interactions: navigation, filters, search, drawers, modals, toasts, allotment state changes and CSV export
+
+### P0 domain foundation
+
+`backend_p0.py` is an additive local SQLite layer wired before the legacy Network and extended handlers. It provides:
+
+- versioned tenant master records (`duty_types`, `vehicle_groups`, `taxes`, `billing_items`, `labels`, `feedback_forms`, `operating_regions`), list/search/create/edit/archive/restore and audit snapshots;
+- sites, shifts, route-plan versions/stops, dispatch assignments, acceptance timers, replacement queue and safe replay keys;
+- policy-driven safety incidents, escalation deadlines, evidence/corrective-action records and closure transitions;
+- Network regions, invite/vendor approval records, lifecycle governance and evidence-derived scorecard/settlement/dispute contracts;
+- tenant permission bundles, explicit deny overrides, authentication checks and cross-tenant ownership enforcement.
+
+The local contract suite is `python3 p0_smoke_test.py`. It covers unauthenticated denial, tenant isolation, duplicate master protection, route-plan publish, assignment acceptance/idempotency, invalid transitions, safety closure, Network region isolation and permission denial.
+
+### Phase 1/2 operational foundation
+
+`backend_phase12.py` is the additive local contract layer for the expanded acceptance scope. It intentionally reuses the canonical Fleet and Network tables rather than creating a second trip ledger:
+
+- `/api/masters/registry` supports all Phase 1 master kinds, search, version history, archive/restore, CSV-shaped import/export and audit events;
+- `/api/operations/rosters`, `/api/operations/live-board`, `/api/operations/duties/{id}/eta` and `/api/operations/bulk` provide roster versions, live stale-GPS/deviation signals, deterministic map estimates, tenant-scoped bulk assign/edit/archive and idempotent replay;
+- `/api/safety/*` adds evidence attachment registration, hashes, mock object-storage references, stale-location evaluation and maker-checker closure approval;
+- `/api/network/v1/*` adds activation gates, replacements, formula-versioned scorecards, disputes and evidence/variance reconciliation;
+- `/api/views`, `/api/permissions/bundles`, `/api/mobile/home` and `/api/integrations/*` expose saved views, permission bundles, mobile home data and HRMS/GPS/maps/messaging/storage provider boundaries;
+- `phase12_smoke_test.py` validates the new contracts on a fresh database, including tenant isolation, evidence closure and safe idempotent replay.
+
+The UI shows skeleton/retry/empty states, grouped and sticky forms, field-level accessible validation, searchable result/selection counts, mobile-card table equivalents, saved-view reapplication, command search, keyboard shortcuts, audit references and recovery actions. The local fallback remains deterministic when integration credentials are absent. The acceptance contract is documented in `docs/ui-acceptance.md`.
+
+### Phase 3 intelligence moat
+
+`backend_phase3.py` adds the backend-first, additive moat layer without creating a parallel trip ledger:
+
+- deterministic predictive alerts for missed-pickup/ETA/SLA, stale GPS, safety and vendor/service degradation, with model versions, confidence, lead time, factors, source events, acknowledgement, resolution and feedback;
+- an invite-only vendor-quality graph over Network profiles, service orders, Fleet duties and scorecards, with explainable dimensions, sample size, confidence, concentration and graph edges;
+- idempotent cost/service simulations with stored assumptions, formula versions, vendor mix, demand, distance, wait, capacity/service tradeoffs, currency, FX and emissions output;
+- variance findings over invoice calculations, expenses and GPS/rated distance with rule versions, evidence, deduplication, assignment, acknowledgement and resolution;
+- sustainability factors, EV eligibility per duty, charging availability and compatibility, reserve/range constraints, localized energy cost, per-duty emissions intensity per passenger-kilometre, baseline/avoided emissions, targets and auditable regional/period reporting;
+- controlled country/region profiles with effective localization, timezone, currency, tax, measurement and mock-labelled FX.
+
+The private console exposes this as **Axiom intelligence**. The local contract is `python3 phase3_smoke_test.py`; the production migration and authenticated Edge boundary are documented in `docs/phase3-moat.md` and `supabase/`.
 
 ## Run locally
 
@@ -103,6 +145,7 @@ For a plain static server, `python3 -m http.server 4173 --bind 0.0.0.0` also wor
 - `/api/security/2fa`, `/api/security/api-keys`, `/api/security/sessions`, `/api/security/events` — local security-factor, API-key, session and audit contracts.
 - `/driver-app/` — standalone mobile-first Axiom Fleet Driver PWA vertical slice with sign-in, demo mode, duty lifecycle, offline queue, sync center, proof, expenses, masked call and SOS controls.
 - `GET/POST /api/network/*`, `/api/reports/export|views|schedules|drilldown`, `/api/privacy/consents|retention`, `/api/admin/*` — network, reporting, privacy and operator workflows.
+- Phase 1/2 routes include `/api/masters/registry`, `/api/operations/live-board`, `/api/mobile/home`, `/api/safety/monitor`, `/api/network/v1/service-orders/*`, `/api/views`, `/api/operations/bulk` and `/api/integrations/catalog|config|sync|events`.
 
 Data is stored in `data/axiom_fleet.sqlite3` by default. Set `AXIOM_DB_PATH` to use another database location and `PORT` to change the server port. The schema stores organizations, users, role profiles, sessions, audit events, One Fleet Live records and the extended feature ledger. The backend seeds the existing demo vendor account and an operational booking → duty → calculation → invoice loop on first start. Use `deep_feature_smoke_test.py` to validate the extended workflows in a temporary database.
 
@@ -113,6 +156,7 @@ The production-oriented database/auth foundation is now prepared in `supabase/`:
 - `supabase/migrations/20260919000000_axiom_fleet_foundation.sql` — PostgreSQL schema, core and extended tenant tables, RLS policies, permissions and onboarding RPCs.
 - `supabase/client.js` — browser adapter used when Supabase configuration is enabled; it covers Auth, profile onboarding, organization-scoped overview, domain collection reads, core RPC writes and the extended finance/reporting/network/privacy/admin workflows.
 - `supabase/functions/calculate-duty/index.ts` — authenticated Edge Function for the paise-exact production calculation path.
+- `supabase/functions/phase12-orchestrator/index.ts` — authenticated Phase 1/2 boundary for tenant-scoped reads, lifecycle writes, idempotent bulk work and provider events.
 - `supabase/config.example.js` — public URL/anon-key configuration template.
 - `supabase/README.md` — setup, Auth metadata and security instructions.
 
@@ -129,7 +173,7 @@ Copy `supabase/config.example.js` to `supabase/config.js`, add the Supabase proj
 ## Recommended production handoff sequence
 
 1. Apply the Supabase migration to a non-production project and validate Auth, PostgREST, RLS and the browser adapter.
-2. Configure Supabase Storage, Edge Functions, email templates and provider secrets without exposing service-role credentials.
+2. Deploy `phase12-orchestrator` and `calculate-duty`, configure Supabase Storage, email templates and provider secrets without exposing service-role credentials.
 3. Expand Workflow Center actions into dedicated supplier, finance, network, passenger and admin screens.
 4. Add Realtime plus polling fallback, signed provider webhooks, Redis throttling and production security headers.
 5. Run the generated calculation corpus, shadow billing, financial reconciliation, load tests and two-fleet UAT.
@@ -154,12 +198,17 @@ Copy `supabase/config.example.js` to `supabase/config.js`, add the Supabase proj
 - `uncovered_smoke_test.py` — focused booking-import and password-reset request coverage.
 - `deep_feature_smoke_test.py` — broad extended PRD workflow coverage across onboarding, finance, approvals, driver/passenger, alerts, network, reports, privacy and admin.
 - `supabase_contract_test.py` — static parity guard for extended Supabase tables, RLS generation and browser route families.
+- `p0_smoke_test.py` — isolated P0 domain, transition, idempotency, authorization-negative and tenant-isolation test.
+- `supabase/migrations/20260923000000_axiom_p0_foundations.sql` — production-direction P0 tables, indexes, tenant RLS, permission grants and row-level audit triggers.
+- `backend_phase12.py` — additive Phase 1/2 local handler for masters, rosters, ETA, safety evidence, Network scorecards, saved views, bulk actions and integrations.
+- `phase12_smoke_test.py` — fresh-database Phase 1/2 tenant, lifecycle, evidence, adapter and idempotency smoke suite.
+- `supabase/migrations/20260924000000_axiom_phase12_foundations.sql` — Phase 1/2 PostgreSQL tables, permission keys, RLS policies and audit-trigger wiring.
 - `openapi.yaml` — published contract for the implemented same-origin API.
 - `PRD-GAPS-AND-IMPROVEMENT-PLAN.md` — current feature coverage matrix and production gates.
 - `supabase/` — Supabase/PostgreSQL foundation, extended RLS migration, browser adapter and setup documentation.
 - `driver-sw.js` and `driver-manifest.json` — dependency-free offline shell for the driver surface.
 - `regression_check.py` — repeatable static regression suite for routes, assets, auth contracts and accessibility baselines.
 - `REGRESSION-REPORT.md` — latest regression scope and results.
-- `data/axiom_fleet.sqlite3` — local persisted identity database created by the server; do not use it for production data.
+- `data/axiom_fleet.sqlite3` — on-demand local persisted identity database; it is intentionally not stored in the project tree or used for production data.
 - `.gitignore` — keeps local database/WAL files and Python caches out of source control.
 - `README.md` — scope, assumptions and production handoff sequence.

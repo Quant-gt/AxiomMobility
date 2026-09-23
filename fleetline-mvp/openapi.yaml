@@ -18,6 +18,7 @@ tags:
   - name: Finance
   - name: Governance
   - name: Network
+  - name: Phase 3 intelligence
 paths:
   /api/health:
     get:
@@ -186,6 +187,127 @@ paths:
         content:
           application/json: {schema: {$ref: '#/components/schemas/NetworkEdgeRequest'}}
       responses: {'201': {description: Partner relationship}}
+  /api/network/v1/feature-flag:
+    get: {tags: [Network], responses: {'200': {description: Tenant Network feature flag}}}
+    post:
+      tags: [Network]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {type: object, required: [enabled], properties: {enabled: {type: boolean}}}}
+      responses: {'200': {description: Feature flag updated}}
+  /api/network/v1/invites:
+    get: {tags: [Network], responses: {'200': {description: Buyer-owned invite directory}}}
+    post:
+      tags: [Network]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkInviteRequest'}}
+      responses: {'200': {description: Invite created or replayed}}
+  /api/network/v1/vendor-profiles:
+    get: {tags: [Network], responses: {'200': {description: Authorized vendor profiles}}}
+    post:
+      tags: [Network]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkVendorProfileRequest'}}
+      responses: {'200': {description: Invited vendor profile}}
+  /api/network/v1/programs:
+    get: {tags: [Network], responses: {'200': {description: Tenant Network programs}}}
+    post:
+      tags: [Network]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkProgramRequest'}}
+      responses: {'200': {description: Program created}}
+  /api/network/v1/programs/{program_id}/requirements:
+    parameters: [{name: program_id, in: path, required: true, schema: {type: string}}]
+    get: {tags: [Network], responses: {'200': {description: Program requirements}}}
+    post:
+      tags: [Network]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkRequirementRequest'}}
+      responses: {'200': {description: Draft requirement with version one}}
+  /api/network/v1/requirements/{requirement_id}/versions/{version}/publish:
+    parameters:
+      - {name: requirement_id, in: path, required: true, schema: {type: string}}
+      - {name: version, in: path, required: true, schema: {type: integer}}
+    post: {tags: [Network], responses: {'200': {description: Published immutable requirement version}}}
+  /api/network/v1/requirements/{requirement_id}/match:
+    parameters: [{name: requirement_id, in: path, required: true, schema: {type: string}}]
+    post:
+      tags: [Network]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/IdempotentCommand'}}
+      responses: {'200': {description: Deterministic eligibility and explainable ranking}}
+  /api/network/v1/requirements/{requirement_id}/quotes:
+    parameters: [{name: requirement_id, in: path, required: true, schema: {type: string}}]
+    get: {tags: [Network], responses: {'200': {description: Confidential quote surface}}}
+    post:
+      tags: [Network]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkQuoteRequest'}}
+      responses: {'200': {description: Immutable quote version}}
+  /api/network/v1/requirements/{requirement_id}/comparisons:
+    parameters: [{name: requirement_id, in: path, required: true, schema: {type: string}}]
+    get: {tags: [Network], responses: {'200': {description: Buyer comparison snapshots}}}
+    post:
+      tags: [Network]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkComparisonRequest'}}
+      responses: {'200': {description: Immutable comparison snapshot}}
+  /api/network/v1/requirements/{requirement_id}/awards:
+    parameters: [{name: requirement_id, in: path, required: true, schema: {type: string}}]
+    get: {tags: [Network], responses: {'200': {description: Requirement awards}}}
+    post:
+      tags: [Network]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkAwardRequest'}}
+      responses: {'200': {description: Pending-approval award}}
+  /api/network/v1/awards/{award_id}/approve:
+    parameters: [{name: award_id, in: path, required: true, schema: {type: string}}]
+    post: {tags: [Network], responses: {'200': {description: Approved award with contract and checks}}}
+  /api/network/v1/awards/{award_id}/activate:
+    parameters: [{name: award_id, in: path, required: true, schema: {type: string}}]
+    post:
+      tags: [Network]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/IdempotentCommand'}}
+      responses:
+        '200': {description: Fleet-linked service order}
+        '409': {description: Activation blocked by lifecycle, contract or readiness checks}
+  /api/network/v1/service-orders:
+    get: {tags: [Network], responses: {'200': {description: Fleet-linked Network service orders}}}
+  /api/network/v1/service-orders/{service_order_id}/scorecards:
+    parameters: [{name: service_order_id, in: path, required: true, schema: {type: string}}]
+    get: {tags: [Network], responses: {'200': {description: Evidence-backed scorecards}}}
+    post:
+      tags: [Network]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkEvidenceRequest'}}
+      responses: {'200': {description: Scorecard recorded}}
+  /api/network/v1/service-orders/{service_order_id}/settlements:
+    parameters: [{name: service_order_id, in: path, required: true, schema: {type: string}}]
+    get: {tags: [Network], responses: {'200': {description: Evidence-backed settlement drafts}}}
+    post:
+      tags: [Network]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkSettlementRequest'}}
+      responses: {'200': {description: Settlement recorded}}
   /api/reports/export:
     post:
       tags: [Governance]
@@ -212,13 +334,811 @@ paths:
         content:
           application/json: {schema: {$ref: '#/components/schemas/PrivacyRequest'}}
       responses: {'201': {description: Privacy request recorded}}
+  /api/masters:
+    get:
+      tags: [Governance]
+      responses:
+        '200': {description: P0 master catalogue and tenant-scoped counts}
+  /api/masters/{kind}:
+    get:
+      tags: [Governance]
+      parameters:
+        - {$ref: '#/components/parameters/Kind'}
+      responses:
+        '200': {description: Tenant-scoped master records}
+    post:
+      tags: [Governance]
+      parameters:
+        - {$ref: '#/components/parameters/Kind'}
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0MasterRequest'}}
+      responses:
+        '200': {description: Versioned master created}
+  /api/masters/{kind}/{master_id}:
+    get:
+      tags: [Governance]
+      parameters:
+        - {$ref: '#/components/parameters/Kind'}
+        - {$ref: '#/components/parameters/MasterId'}
+      responses:
+        '200': {description: Master record with immutable versions}
+    patch:
+      tags: [Governance]
+      parameters:
+        - {$ref: '#/components/parameters/Kind'}
+        - {$ref: '#/components/parameters/MasterId'}
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0MasterRequest'}}
+      responses:
+        '200': {description: Master version created}
+  /api/masters/{kind}/{master_id}/{action}:
+    post:
+      tags: [Governance]
+      parameters:
+        - {$ref: '#/components/parameters/Kind'}
+        - {$ref: '#/components/parameters/MasterId'}
+        - name: action
+          in: path
+          required: true
+          schema: {type: string, enum: [archive, restore]}
+      responses:
+        '200': {description: Master status transition}
+  /api/operations/sites:
+    get:
+      tags: [Operations]
+      responses:
+        '200': {description: Tenant-scoped operating sites}
+    post:
+      tags: [Operations]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0SiteRequest'}}
+      responses:
+        '200': {description: Operating site created}
+  /api/operations/route-plans:
+    get:
+      tags: [Operations]
+      responses:
+        '200': {description: Route-plan versions}
+    post:
+      tags: [Operations]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0RoutePlanRequest'}}
+      responses:
+        '200': {description: Draft route plan with ordered stops}
+  /api/operations/route-plans/{route_plan_id}/publish:
+    post:
+      tags: [Operations]
+      parameters:
+        - {$ref: '#/components/parameters/RoutePlanId'}
+      responses:
+        '200': {description: Published route plan}
+        '409': {description: Infeasible or invalid transition}
+  /api/operations/dispatch-board:
+    get:
+      tags: [Operations]
+      responses:
+        '200': {description: Assignment offers and acceptance deadlines}
+  /api/operations/assignments:
+    post:
+      tags: [Operations]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0AssignmentRequest'}}
+      responses:
+        '200': {description: Assignment offer}
+  /api/operations/assignments/{assignment_id}/{action}:
+    post:
+      tags: [Operations]
+      parameters:
+        - {$ref: '#/components/parameters/AssignmentId'}
+        - name: action
+          in: path
+          required: true
+          schema: {type: string, enum: [accept, reject, expire]}
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/IdempotencyRequest'}}
+      responses:
+        '200': {description: Assignment transition}
+        '409': {description: Invalid transition}
+  /api/operations/replacements:
+    get:
+      tags: [Operations]
+      responses:
+        '200': {description: Replacement queue}
+    post:
+      tags: [Operations]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0ReplacementRequest'}}
+      responses:
+        '200': {description: Replacement work item}
+  /api/safety/policies:
+    get:
+      tags: [Governance]
+      responses:
+        '200': {description: Active versioned safety policies}
+    post:
+      tags: [Governance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0SafetyPolicyRequest'}}
+      responses:
+        '200': {description: Safety policy version}
+  /api/safety/incidents:
+    get:
+      tags: [Governance]
+      responses:
+        '200': {description: Tenant-scoped incident queue}
+    post:
+      tags: [Governance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0IncidentRequest'}}
+      responses:
+        '200': {description: Open incident with escalation deadline}
+  /api/safety/incidents/{incident_id}/{action}:
+    post:
+      tags: [Governance]
+      parameters:
+        - {$ref: '#/components/parameters/IncidentId'}
+        - name: action
+          in: path
+          required: true
+          schema: {type: string, enum: [acknowledge, investigate, contain, resolve, close]}
+      responses:
+        '200': {description: Incident transition}
+        '409': {description: Invalid transition or open corrective action}
+  /api/permissions:
+    get:
+      tags: [Governance]
+      responses:
+        '200': {description: Tenant permission bundle and grants}
+  /api/permissions/grants:
+    post:
+      tags: [Governance]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0PermissionGrant'}}
+      responses:
+        '200': {description: Permission grant updated}
+  /api/network/v1/regions:
+    get:
+      tags: [Network]
+      responses:
+        '200': {description: Invite-only operating regions}
+    post:
+      tags: [Network]
+      requestBody:
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/P0RegionRequest'}}
+      responses:
+        '200': {description: Network region created}
+  /api/masters/registry:
+    get:
+      tags: [Operations]
+      parameters:
+        - {$ref: '#/components/parameters/Kind'}
+        - {name: q, in: query, schema: {type: string}}
+      responses: {'200': {description: Unified tenant master registry}}
+    post:
+      tags: [Operations]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase12MasterRequest'}}}
+      responses: {'200': {description: Master created and versioned}}
+  /api/masters/registry/import:
+    post:
+      tags: [Operations]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {type: object, required: [records], properties: {records: {type: array, items: {$ref: '#/components/schemas/Phase12MasterRequest'}}}}}}
+      responses: {'200': {description: Import report with row-level outcomes}}
+  /api/masters/registry/export:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Tenant-scoped CSV export payload}}
+  /api/masters/registry/{record_id}:
+    get:
+      tags: [Operations]
+      parameters: [{$ref: '#/components/parameters/RecordId'}]
+      responses: {'200': {description: Master record and version history}}
+    patch:
+      tags: [Operations]
+      parameters: [{$ref: '#/components/parameters/RecordId'}]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/Phase12MasterRequest'}}}}
+      responses: {'200': {description: Versioned master update}}
+  /api/masters/registry/{record_id}/{action}:
+    post:
+      tags: [Operations]
+      parameters:
+        - {$ref: '#/components/parameters/RecordId'}
+        - {name: action, in: path, required: true, schema: {type: string, enum: [archive, restore]}}
+      responses: {'200': {description: Archive or restore result}}
+  /api/operations/rosters:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Versioned roster list}}
+    post:
+      tags: [Operations]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/RosterRequest'}}}}
+      responses: {'200': {description: Roster version created}}
+  /api/operations/live-board:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Tenant-scoped live ETA and GPS board}}
+  /api/operations/duties/{duty_id}/eta:
+    post:
+      tags: [Operations]
+      parameters: [{$ref: '#/components/parameters/DutyId'}]
+      requestBody: {content: {application/json: {schema: {type: object, properties: {deviation_minutes: {type: integer}, status: {type: string}}}}}}
+      responses: {'200': {description: ETA snapshot}}
+  /api/operations/bulk:
+    post:
+      tags: [Operations]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/BulkOperationRequest'}}}}
+      responses: {'200': {description: Idempotent bulk-operation result}}
+  /api/mobile/home:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Driver/operator mobile home payload}}
+  /api/views:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Saved views}}
+    post:
+      tags: [Operations]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/SavedViewRequest'}}}}
+      responses: {'200': {description: Saved view created}}
+  /api/safety/monitor:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Open stale-location and incident signals}}
+  /api/safety/monitor/evaluate:
+    post:
+      tags: [Operations]
+      responses: {'200': {description: Policy evaluation result}}
+  /api/safety/incidents/{incident_id}/evidence:
+    get:
+      tags: [Operations]
+      parameters: [{$ref: '#/components/parameters/IncidentId'}]
+      responses: {'200': {description: Incident evidence list}}
+    post:
+      tags: [Operations]
+      parameters: [{$ref: '#/components/parameters/IncidentId'}]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/EvidenceRequest'}}}}
+      responses: {'200': {description: Evidence attachment registered}}
+  /api/network/v1/scorecard-formulas:
+    get:
+      tags: [Network]
+      responses: {'200': {description: Active scorecard formula versions}}
+    post:
+      tags: [Network]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/FormulaRequest'}}}}
+      responses: {'200': {description: Versioned formula created}}
+  /api/network/v1/service-orders/{service_order_id}/activation:
+    get:
+      tags: [Network]
+      parameters: [{$ref: '#/components/parameters/ServiceOrderId'}]
+      responses: {'200': {description: Activation readiness checks}}
+    post:
+      tags: [Network]
+      parameters: [{$ref: '#/components/parameters/ServiceOrderId'}]
+      responses: {'200': {description: Network service order activated}}
+  /api/network/v1/service-orders/{service_order_id}/replacements:
+    get:
+      tags: [Network]
+      parameters: [{$ref: '#/components/parameters/ServiceOrderId'}]
+      responses: {'200': {description: Replacement queue}}
+    post:
+      tags: [Network]
+      parameters: [{$ref: '#/components/parameters/ServiceOrderId'}]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/P0ReplacementRequest'}}}}
+      responses: {'200': {description: Replacement request created}}
+  /api/network/v1/service-orders/{service_order_id}/scorecard:
+    post:
+      tags: [Network]
+      parameters: [{$ref: '#/components/parameters/ServiceOrderId'}]
+      responses: {'200': {description: Evidence-derived scorecard run}}
+  /api/network/v1/service-orders/{service_order_id}/reconciliation:
+    get:
+      tags: [Network]
+      parameters: [{$ref: '#/components/parameters/ServiceOrderId'}]
+      responses: {'200': {description: Reconciliation records}}
+    post:
+      tags: [Network]
+      parameters: [{$ref: '#/components/parameters/ServiceOrderId'}]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/ReconciliationRequest'}}}}
+      responses: {'200': {description: Reconciliation result}}
+  /api/permissions/bundles:
+    get:
+      tags: [Governance]
+      responses: {'200': {description: Versioned permission bundles}}
+    post:
+      tags: [Governance]
+      requestBody: {content: {application/json: {schema: {type: object, required: [role, name, permissions], properties: {role: {type: string}, name: {type: string}, permissions: {type: array, items: {type: string}}}}}}}
+      responses: {'200': {description: Permission bundle created}}
+  /api/integrations/catalog:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Provider contracts and current mock/live mode}}
+  /api/integrations/config:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Tenant integration configuration}}
+    post:
+      tags: [Operations]
+      responses: {'200': {description: Integration configuration saved}}
+  /api/integrations/events:
+    get:
+      tags: [Operations]
+      responses: {'200': {description: Provider event ledger}}
+    post:
+      tags: [Operations]
+      responses: {'200': {description: Provider event accepted idempotently}}
+  /api/phase3/predictive-alerts:
+    get:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Tenant-scoped model-versioned predictive alerts}}
+  /api/phase3/predictive-alerts/evaluate:
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase3EvaluateRequest'}}}
+      responses: {'200': {description: Deterministic risk evaluation with factors and source events}}
+  /api/phase3/predictive-alerts/{alert_id}/{action}:
+    post:
+      tags: [Phase 3 intelligence]
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema: {type: string}
+        - name: action
+          in: path
+          required: true
+          schema: {type: string, enum: [acknowledge, resolve, feedback]}
+      responses: {'200': {description: Alert lifecycle or feedback mutation}}
+  /api/phase3/vendor-quality/graph:
+    get:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Invite-only vendor/service-order/duty/scorecard graph}}
+    post:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Recomputed explainable quality projection}}
+  /api/phase3/simulations:
+    get:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Reproducible simulation history}}
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase3SimulationRequest'}}}
+      responses: {'200': {description: Completed cost/service simulation}}
+  /api/phase3/simulations/run:
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase3SimulationRequest'}}}
+      responses: {'200': {description: Idempotent simulation replay or result}}
+  /api/phase3/simulations/compare:
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        content: {application/json: {schema: {type: object, required: [scenarios], properties: {scenarios: {type: array, maxItems: 10, items: {type: object}}}}}}
+      responses: {'200': {description: Side-by-side deterministic scenarios}}
+  /api/phase3/simulations/{simulation_id}:
+    get:
+      tags: [Phase 3 intelligence]
+      parameters:
+        - name: simulation_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses: {'200': {description: Simulation inputs, assumptions and outputs}}
+  /api/phase3/variance/findings:
+    get:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Explainable reconciliation findings}}
+  /api/phase3/variance/evaluate:
+    post:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Scan result with rule version and deduplication}}
+  /api/phase3/variance/findings/{finding_id}/{action}:
+    post:
+      tags: [Phase 3 intelligence]
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema: {type: string}
+        - name: action
+          in: path
+          required: true
+          schema: {type: string, enum: [assign, acknowledge, resolve]}
+      responses: {'200': {description: Assignment, acknowledgement or resolution workflow}}
+  /api/phase3/sustainability/summary:
+    get:
+      tags: [Phase 3 intelligence]
+      parameters:
+        - {$ref: '#/components/parameters/PeriodStart'}
+        - {$ref: '#/components/parameters/PeriodEnd'}
+        - {$ref: '#/components/parameters/RegionCodeQuery'}
+      responses: {'200': {description: Regional emissions and target summary}}
+  /api/phase3/sustainability/report:
+    get:
+      tags: [Phase 3 intelligence]
+      parameters:
+        - {$ref: '#/components/parameters/PeriodStart'}
+        - {$ref: '#/components/parameters/PeriodEnd'}
+        - {$ref: '#/components/parameters/RegionCodeQuery'}
+        - {$ref: '#/components/parameters/FuelTypeQuery'}
+      responses: {'200': {description: Auditable period and region sustainability report with reporting and factor versions}}
+  /api/phase3/sustainability/trips:
+    get:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Auditable per-duty emissions calculations}}
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase3SustainabilityRequest'}}}
+      responses: {'200': {description: Emissions calculations with factor version}}
+  /api/phase3/sustainability/charging-stations:
+    get:
+      tags: [Phase 3 intelligence]
+      parameters:
+        - {$ref: '#/components/parameters/RegionCodeQuery'}
+        - {$ref: '#/components/parameters/StatusQuery'}
+      responses: {'200': {description: Tenant-scoped charging availability and connector catalog}}
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase3ChargingStationRequest'}}}
+      responses: {'200': {description: Charging station created with audit reference}}
+  /api/phase3/sustainability/charging-stations/{station_id}:
+    get:
+      tags: [Phase 3 intelligence]
+      parameters: [{$ref: '#/components/parameters/ChargingStationId'}]
+      responses: {'200': {description: Charging station detail}}
+    patch:
+      tags: [Phase 3 intelligence]
+      parameters: [{$ref: '#/components/parameters/ChargingStationId'}]
+      requestBody: {content: {application/json: {schema: {$ref: '#/components/schemas/Phase3ChargingStationPatch'}}}}
+      responses: {'200': {description: Charging station availability updated with audit reference}}
+    delete:
+      tags: [Phase 3 intelligence]
+      parameters: [{$ref: '#/components/parameters/ChargingStationId'}]
+      responses: {'200': {description: Charging station deactivated with audit reference}}
+  /api/phase3/sustainability/ev-eligibility:
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase3EvEligibilityRequest'}}}
+      responses: {'200': {description: Vehicle and duty EV eligibility including capacity, range, charging and energy evidence}}
+  /api/phase3/sustainability/targets:
+    get:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Sustainability targets}}
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase3SustainabilityTargetRequest'}}}
+      responses: {'200': {description: Target created or updated with an audit reference}}
+  /api/phase3/regions:
+    get:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Tenant profiles plus controlled region catalog}}
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase3RegionRequest'}}}
+      responses: {'200': {description: Region profile activated}}
+  /api/phase3/regions/{region_id}:
+    patch:
+      tags: [Phase 3 intelligence]
+      parameters:
+        - name: region_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses: {'200': {description: Region profile updated}}
+  /api/phase3/localization:
+    get:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Effective workspace localization}}
+    patch:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Default localization changed}}
+  /api/phase3/fx/convert:
+    post:
+      tags: [Phase 3 intelligence]
+      requestBody:
+        content: {application/json: {schema: {$ref: '#/components/schemas/Phase3FxRequest'}}}
+      responses: {'200': {description: Deterministic configured or mock FX conversion}}
+  /api/phase3/tax/preview:
+    post:
+      tags: [Phase 3 intelligence]
+      responses: {'200': {description: Regional tax preview}}
 components:
   securitySchemes:
     sessionCookie:
       type: apiKey
       in: cookie
       name: axiom_session
+  parameters:
+    RecordId:
+      name: record_id
+      in: path
+      required: true
+      schema: {type: string}
+    DutyId:
+      name: duty_id
+      in: path
+      required: true
+      schema: {type: string}
+    ServiceOrderId:
+      name: service_order_id
+      in: path
+      required: true
+      schema: {type: string}
+    Kind:
+      name: kind
+      in: path
+      required: true
+      schema: {type: string, enum: [duty_types, vehicle_groups, taxes, billing_items, documents, labels, employees, passengers, feedback_forms, branches, operating_regions, suppliers, drivers, vehicles, rate_cards, sites, shifts]}
+    MasterId:
+      name: master_id
+      in: path
+      required: true
+      schema: {type: string}
+    RoutePlanId:
+      name: route_plan_id
+      in: path
+      required: true
+      schema: {type: string}
+    AssignmentId:
+      name: assignment_id
+      in: path
+      required: true
+      schema: {type: string}
+    IncidentId:
+      name: incident_id
+      in: path
+      required: true
+      schema: {type: string}
+    ChargingStationId:
+      name: station_id
+      in: path
+      required: true
+      schema: {type: string}
+    PeriodStart:
+      name: period_start
+      in: query
+      required: false
+      schema: {type: string, format: date}
+    PeriodEnd:
+      name: period_end
+      in: query
+      required: false
+      schema: {type: string, format: date}
+    RegionCodeQuery:
+      name: region_code
+      in: query
+      required: false
+      schema: {type: string, enum: [IN-MH, IN-KA, AE-DU, SG-SG, GB-LND]}
+    FuelTypeQuery:
+      name: fuel_type
+      in: query
+      required: false
+      schema: {type: string, enum: [petrol, diesel, cng, hybrid, ev, electric]}
+    StatusQuery:
+      name: status
+      in: query
+      required: false
+      schema: {type: string}
   schemas:
+    Phase3EvaluateRequest:
+      type: object
+      properties:
+        idempotency_key: {type: string, maxLength: 160}
+        model_version: {type: string, default: predictive-v1}
+        stale_after_seconds: {type: integer, minimum: 60, default: 300}
+        minimum_risk_score: {type: number, minimum: 0, maximum: 100}
+    Phase3SimulationRequest:
+      type: object
+      required: [idempotency_key]
+      properties:
+        scenario_name: {type: string}
+        idempotency_key: {type: string, maxLength: 160}
+        demand_duties: {type: integer, minimum: 0}
+        avg_distance_km: {type: number, minimum: 0}
+        avg_duration_minutes: {type: number, minimum: 0}
+        waiting_minutes: {type: number, minimum: 0}
+        waiting_cost_per_minute_minor: {type: integer, minimum: 0}
+        base_rate_minor: {type: integer, minimum: 0}
+        fuel_cost_per_km_minor: {type: integer, minimum: 0}
+        driver_cost_per_hour_minor: {type: integer, minimum: 0}
+        vendor_mix:
+          type: array
+          items:
+            type: object
+            properties:
+              vendor_id: {type: string}
+              share: {type: number, minimum: 0}
+              cost_per_duty_minor: {type: integer, minimum: 0}
+        capacity_per_duty: {type: number, minimum: 1}
+        capacity_required: {type: number, minimum: 1}
+        service_penalty_pct: {type: number, minimum: 0}
+        emissions_factor_kg_per_km: {type: number, minimum: 0}
+        carbon_price_per_kg_minor: {type: integer, minimum: 0}
+        region_code: {type: string, enum: [IN-MH, IN-KA, AE-DU, SG-SG, GB-LND]}
+    Phase3SustainabilityRequest:
+      type: object
+      properties:
+        duty_id: {type: string}
+        duty_ids: {type: array, maxItems: 200, items: {type: string}}
+        distance_km: {type: number, minimum: 0}
+        passenger_count: {type: integer, minimum: 1}
+        region_code: {type: string, enum: [IN-MH, IN-KA, AE-DU, SG-SG, GB-LND]}
+        fuel_type: {type: string, enum: [petrol, diesel, cng, hybrid, ev, electric]}
+        factor_kg_per_km: {type: number, minimum: 0}
+        factor_version: {type: string}
+        reserve_pct: {type: number, minimum: 0}
+        deadhead_km: {type: number, minimum: 0}
+        range_remaining_km: {type: number, minimum: 0}
+        usable_range_km: {type: number, minimum: 0}
+        energy_consumption_kwh_per_km: {type: number, minimum: 0}
+        energy_price_per_kwh_minor: {type: integer, minimum: 0}
+        grid_factor_kg_per_kwh: {type: number, minimum: 0}
+        charging_station_id: {type: string}
+        charging_connector: {type: string}
+    Phase3EvEligibilityRequest:
+      type: object
+      required: [vehicle_id, distance_km, passenger_count]
+      properties:
+        vehicle_id: {type: string}
+        duty_id: {type: string}
+        distance_km: {type: number, minimum: 0}
+        passenger_count: {type: integer, minimum: 1}
+        region_code: {type: string, enum: [IN-MH, IN-KA, AE-DU, SG-SG, GB-LND]}
+        reserve_pct: {type: number, minimum: 0}
+        deadhead_km: {type: number, minimum: 0}
+        range_remaining_km: {type: number, minimum: 0}
+        usable_range_km: {type: number, minimum: 0}
+        charging_connector: {type: string}
+        charging_station_id: {type: string}
+        energy_consumption_kwh_per_km: {type: number, minimum: 0}
+        energy_price_per_kwh_minor: {type: integer, minimum: 0}
+    Phase3ChargingStationRequest:
+      type: object
+      required: [region_code, name, total_ports, available_ports]
+      properties:
+        region_code: {type: string, enum: [IN-MH, IN-KA, AE-DU, SG-SG, GB-LND]}
+        name: {type: string}
+        location_label: {type: string}
+        connector_types: {type: array, items: {type: string}}
+        total_ports: {type: integer, minimum: 1}
+        available_ports: {type: integer, minimum: 0}
+        power_kw: {type: number, minimum: 0}
+        energy_price_per_kwh_minor: {type: integer, minimum: 0}
+        status: {type: string}
+        operating_hours: {type: object}
+    Phase3ChargingStationPatch:
+      type: object
+      properties:
+        name: {type: string}
+        location_label: {type: string}
+        connector_types: {type: array, items: {type: string}}
+        total_ports: {type: integer, minimum: 0}
+        available_ports: {type: integer, minimum: 0}
+        power_kw: {type: number, minimum: 0}
+        energy_price_per_kwh_minor: {type: integer, minimum: 0}
+        status: {type: string}
+        operating_hours: {type: object}
+    Phase3SustainabilityTargetRequest:
+      type: object
+      required: [period_start, period_end, baseline_kg, target_kg]
+      properties:
+        scope: {type: string}
+        period_start: {type: string, format: date}
+        period_end: {type: string, format: date}
+        baseline_kg: {type: number, minimum: 0}
+        target_kg: {type: number, minimum: 0}
+    Phase3RegionRequest:
+      type: object
+      required: [region_code]
+      properties:
+        region_code: {type: string, enum: [IN-MH, IN-KA, AE-DU, SG-SG, GB-LND]}
+        name: {type: string}
+        currency: {type: string, minLength: 3, maxLength: 3}
+        timezone: {type: string}
+        locale: {type: string}
+        tax_regime: {type: string}
+        distance_unit: {type: string, enum: [km, mi]}
+        status: {type: string, enum: [active, inactive]}
+        is_default: {type: boolean}
+        effective_from: {type: string, format: date}
+        effective_to: {type: string, format: date}
+        metadata: {type: object}
+    Phase3FxRequest:
+      type: object
+      required: [base_currency, quote_currency, amount_minor]
+      properties:
+        base_currency: {type: string, minLength: 3, maxLength: 3}
+        quote_currency: {type: string, minLength: 3, maxLength: 3}
+        amount_minor: {type: integer, minimum: 0}
+    Phase12MasterRequest:
+      type: object
+      required: [kind, code, name]
+      properties:
+        kind: {type: string}
+        code: {type: string}
+        name: {type: string}
+        status: {type: string}
+        effective_from: {type: string, format: date}
+        effective_to: {type: string, format: date}
+        metadata: {type: object}
+    RosterRequest:
+      type: object
+      required: [route_plan_id, plan_date]
+      properties:
+        route_plan_id: {type: string}
+        plan_date: {type: string, format: date}
+        assignments: {type: array, items: {type: object}}
+        constraints: {type: object}
+    BulkOperationRequest:
+      type: object
+      required: [operation, entity_type, ids]
+      properties:
+        operation: {type: string}
+        entity_type: {type: string}
+        ids: {type: array, maxItems: 200, items: {type: string}}
+        idempotency_key: {type: string}
+        patch: {type: object}
+        driver_id: {type: string}
+        vehicle_id: {type: string}
+    SavedViewRequest:
+      type: object
+      required: [scope, name]
+      properties:
+        scope: {type: string}
+        name: {type: string}
+        filters: {type: object}
+        columns: {type: array, items: {type: string}}
+        shared: {type: boolean}
+    EvidenceRequest:
+      type: object
+      required: [evidence_type]
+      properties:
+        evidence_type: {type: string}
+        filename: {type: string}
+        source_event_id: {type: string}
+        sha256: {type: string}
+        metadata: {type: object}
+    FormulaRequest:
+      type: object
+      required: [code, weights]
+      properties:
+        code: {type: string}
+        weights: {type: object, additionalProperties: {type: number}}
+        thresholds: {type: object}
+    ReconciliationRequest:
+      type: object
+      required: [expected_paise, observed_paise]
+      properties:
+        expected_paise: {type: integer}
+        observed_paise: {type: integer}
+        scorecard_run_id: {type: string}
+        statement_id: {type: string}
+        evidence: {type: object}
     LoginRequest:
       type: object
       required: [email, password]
@@ -339,6 +1259,88 @@ components:
       properties:
         partner_name: {type: string}
         cities: {type: array, items: {type: string}}
+    IdempotentCommand:
+      type: object
+      properties:
+        idempotency_key: {type: string, maxLength: 160}
+    NetworkInviteRequest:
+      type: object
+      properties:
+        vendor_organization_id: {type: string}
+        vendor_name: {type: string}
+        invite_email: {type: string, format: email}
+        idempotency_key: {type: string}
+    NetworkProgramRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        description: {type: string}
+        status: {type: string, enum: [draft, active]}
+        settings: {type: object}
+    NetworkRequirementRequest:
+      type: object
+      required: [reference, spec]
+      properties:
+        reference: {type: string}
+        spec: {type: object}
+        change_note: {type: string}
+    NetworkVendorProfileRequest:
+      type: object
+      required: [invite_id, vendor_organization_id, vendor_name]
+      properties:
+        invite_id: {type: string}
+        vendor_organization_id: {type: string}
+        vendor_name: {type: string}
+        cities: {type: array, items: {type: string}}
+        service_types: {type: array, items: {type: string}}
+        vehicle_types: {type: array, items: {type: string}}
+        capabilities: {type: array, items: {type: string}}
+        capacity: {type: object}
+        compliance: {type: object}
+    NetworkQuoteRequest:
+      type: object
+      required: [vendor_profile_id, quote]
+      properties:
+        vendor_profile_id: {type: string}
+        idempotency_key: {type: string}
+        quote: {type: object, required: [total_paise]}
+        assumptions: {type: object}
+    NetworkComparisonRequest:
+      type: object
+      properties:
+        quote_version_ids: {type: array, items: {type: string}}
+        idempotency_key: {type: string}
+    NetworkAwardRequest:
+      type: object
+      required: [comparison_id, quote_version_id]
+      properties:
+        comparison_id: {type: string}
+        quote_version_id: {type: string}
+        award_reason: {type: string}
+        terms: {type: object}
+        idempotency_key: {type: string}
+    NetworkEvidenceRequest:
+      type: object
+      required: [evidence]
+      properties:
+        evidence: {type: object}
+        metrics: {type: object}
+        period_start: {type: string, format: date}
+        period_end: {type: string, format: date}
+        idempotency_key: {type: string}
+    NetworkSettlementRequest:
+      type: object
+      required: [gross_paise, deductions_paise, evidence, period_start, period_end]
+      properties:
+        scorecard_id: {type: string}
+        gross_paise: {type: integer, minimum: 0}
+        deductions_paise: {type: integer, minimum: 0}
+        period_start: {type: string, format: date}
+        period_end: {type: string, format: date}
+        evidence: {type: object}
+        idempotency_key: {type: string}
     ExportRequest:
       type: object
       properties:
@@ -350,3 +1352,83 @@ components:
       properties:
         request_type: {type: string, enum: [access, correction, deletion, export, withdraw_consent]}
         notes: {type: string}
+    P0MasterRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: {type: string, maxLength: 80}
+        name: {type: string, maxLength: 160}
+        status: {type: string}
+        effective_from: {type: string, format: date}
+        effective_to: {type: string, format: date}
+        config: {type: object}
+    P0SiteRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        city: {type: string}
+        address: {type: object}
+    P0RoutePlanRequest:
+      type: object
+      properties:
+        plan_date: {type: string, format: date}
+        site_id: {type: string}
+        duty_ids: {type: array, items: {type: string}}
+        max_stops: {type: integer, minimum: 1}
+        constraints: {type: object}
+    P0AssignmentRequest:
+      type: object
+      required: [route_plan_id, duty_id]
+      properties:
+        route_plan_id: {type: string}
+        duty_id: {type: string}
+        driver_id: {type: string}
+        vehicle_id: {type: string}
+        response_deadline: {type: string, format: date-time}
+    P0ReplacementRequest:
+      type: object
+      required: [duty_id, reason]
+      properties:
+        duty_id: {type: string}
+        reason: {type: string}
+        due_at: {type: string, format: date-time}
+        replacement_driver_id: {type: string}
+        replacement_vehicle_id: {type: string}
+    P0SafetyPolicyRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        rules: {type: object}
+    P0IncidentRequest:
+      type: object
+      required: [alert_type, severity, title]
+      properties:
+        alert_type: {type: string}
+        severity: {type: string, enum: [low, medium, high, critical]}
+        title: {type: string}
+        description: {type: string}
+        duty_id: {type: string}
+        evidence: {type: object}
+    P0PermissionGrant:
+      type: object
+      required: [role, permission]
+      properties:
+        role: {type: string}
+        permission: {type: string}
+        allowed: {type: boolean, default: true}
+    P0RegionRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: {type: string}
+        name: {type: string}
+        cities: {type: array, items: {type: string}}
+        feature_flags: {type: object}
+    IdempotencyRequest:
+      type: object
+      properties:
+        idempotency_key: {type: string, maxLength: 160}

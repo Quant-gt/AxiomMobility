@@ -1,8 +1,10 @@
 import * as SecureStore from 'expo-secure-store';
-import type { ApiResponse, Duty, QueueOperation, SessionUser } from './types';
+import type { ApiResponse, Duty, MobileHome, Phase3PredictiveAlert, Phase3SustainabilitySummary, QueueOperation, SessionUser } from './types';
 
 const API_BASE = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4173').replace(/\/$/, '');
 const TOKEN_KEY = 'axiom_driver_access_token';
+const REQUEST_TIMEOUT_MS = 15000;
+const REPLAY_BATCH_SIZE = 100;
 
 async function token(): Promise<string | null> {
   return SecureStore.getItemAsync(TOKEN_KEY);
@@ -14,11 +16,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
   headers.set('Accept', 'application/json');
   if (options.body) headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  let body: ApiResponse<T> = { ok: response.ok };
-  try { body = await response.json(); } catch (_) { /* response may be empty */ }
-  if (!response.ok) throw new Error(String(body.error || 'The driver service could not complete that request.'));
-  return body;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${API_BASE}${path}`, { ...options, headers, signal: controller.signal });
+    let body: ApiResponse<T> = { ok: response.ok };
+    try { body = await response.json(); } catch (_) { /* response may be empty */ }
+    if (!response.ok) throw new Error(String(body.error || 'The driver service could not complete that request.'));
+    return body;
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') throw new Error('The driver service timed out. The action remains safe to retry.');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function signIn(email: string, password: string): Promise<SessionUser> {
@@ -38,11 +49,28 @@ export async function currentUser(): Promise<SessionUser> {
   return response.user;
 }
 
+export async function mobileOperationsHome(): Promise<MobileHome> {
+  const response = await request<never>('/api/mobile/home');
+  return { summary: response.summary as MobileHome['summary'], next_duty: response.next_duty as MobileHome['next_duty'], duties: response.duties as MobileHome['duties'], alerts: response.alerts as MobileHome['alerts'], updated_at: response.updated_at as string };
+}
+
+export async function phase3PredictiveAlerts(): Promise<Phase3PredictiveAlert[]> {
+  const response = await request<Phase3PredictiveAlert>('/api/phase3/predictive-alerts?limit=20');
+  return (response.items || []) as Phase3PredictiveAlert[];
+}
+
+export async function phase3SustainabilitySummary(): Promise<Phase3SustainabilitySummary> {
+  const response = await request<never>('/api/phase3/sustainability/summary');
+  return response as unknown as Phase3SustainabilitySummary;
+}
+
 export async function assignedDuty(): Promise<Duty | null> {
-  const duties = await request<Duty>('/api/duties?limit=20');
+  const [duties, bookings] = await Promise.all([
+    request<Duty>('/api/duties?limit=20'),
+    request<Record<string, unknown>>('/api/bookings?limit=50'),
+  ]);
   const row = (duties.items || []).find(item => ['assigned', 'accepted', 'en_route', 'started', 'paused'].includes(item.status)) || duties.items?.[0];
   if (!row) return null;
-  const bookings = await request<Record<string, unknown>>('/api/bookings?limit=50');
   const booking = (bookings.items || []).find(item => item.id === row.booking_id) as Record<string, any> | undefined;
   return {
     ...row,
@@ -75,8 +103,12 @@ export async function sendSos(dutyId: string, idempotencyKey?: string): Promise<
 }
 
 export async function replay(operations: QueueOperation[], deviceId = 'axiom-driver-native'): Promise<{ failed: Set<string>; count: number }> {
-  const response = await request<{ idempotency_key: string; status: string }>('/api/sync/replay', { method: 'POST', body: JSON.stringify({ device_id: deviceId, operations }) });
-  const results = (response.results as Array<{ idempotency_key: string; status: string }> | undefined) || [];
+  const results: Array<{ idempotency_key: string; status: string }> = [];
+  for (let offset = 0; offset < operations.length; offset += REPLAY_BATCH_SIZE) {
+    const batch = operations.slice(offset, offset + REPLAY_BATCH_SIZE);
+    const response = await request<{ idempotency_key: string; status: string }>('/api/sync/replay', { method: 'POST', body: JSON.stringify({ device_id: deviceId, operations: batch }) });
+    results.push(...((response.results as Array<{ idempotency_key: string; status: string }> | undefined) || []));
+  }
   return { failed: new Set(results.filter(item => item.status === 'failed').map(item => item.idempotency_key)), count: results.length };
 }
 

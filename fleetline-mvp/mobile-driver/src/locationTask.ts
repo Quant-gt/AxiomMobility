@@ -71,9 +71,8 @@ export async function flushLocationBuffer(): Promise<void> {
 export async function bufferLocation(dutyId: string, location: Location.LocationObject): Promise<void> {
   const point = pointFromLocation(dutyId, location);
   const buffer = await readLocationBuffer();
-  if (!buffer.some(item => item.idempotencyKey === point.idempotencyKey)) {
-    await writeLocationBuffer([...buffer, point]);
-  }
+  const keys = new Set(buffer.map(item => item.idempotencyKey));
+  if (!keys.has(point.idempotencyKey)) await writeLocationBuffer([...buffer, point]);
   await flushLocationBuffer();
 }
 
@@ -87,7 +86,15 @@ TaskManager.defineTask(DRIVER_LOCATION_TASK, async ({ data, error }) => {
   const locations = (data as { locations?: Location.LocationObject[] } | undefined)?.locations || [];
   if (!dutyId || !locations.length) return;
   const existing = await readLocationBuffer();
-  const additions = locations.map(location => pointFromLocation(dutyId, location)).filter(point => !existing.some(item => item.idempotencyKey === point.idempotencyKey));
+  const keys = new Set(existing.map(item => item.idempotencyKey));
+  const additions: BufferedLocation[] = [];
+  for (const location of locations) {
+    const point = pointFromLocation(dutyId, location);
+    if (!keys.has(point.idempotencyKey)) {
+      keys.add(point.idempotencyKey);
+      additions.push(point);
+    }
+  }
   if (additions.length) await writeLocationBuffer([...existing, ...additions]);
   await flushLocationBuffer();
 });

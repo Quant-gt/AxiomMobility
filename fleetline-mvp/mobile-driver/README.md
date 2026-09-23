@@ -5,7 +5,8 @@ This directory is the native cross-platform Driver app foundation. It is designe
 ## Current vertical slice
 
 - Secure token-based mobile sign-in using `expo-secure-store`.
-- Today screen with one-duty-at-a-time workflow.
+- Today screen with one-duty-at-a-time workflow and `/api/mobile/home` summary/alert hydration.
+- Read-only Phase 3 native data contracts for predictive alerts and sustainability summaries (`src/types.ts` / `src/api.ts`); operator acknowledgement, simulations and regional writes remain on the authenticated web/Edge boundary.
 - Assigned, accepted, started and completed duty transitions.
 - OTP proof completion.
 - Expense capture.

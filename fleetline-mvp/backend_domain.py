@@ -59,9 +59,29 @@ def initialize_domain_schema(conn) -> None:
             organization_id TEXT NOT NULL,
             registration_number TEXT NOT NULL,
             vehicle_type TEXT NOT NULL DEFAULT 'sedan',
+            vehicle_group TEXT NOT NULL DEFAULT '',
             make_model TEXT NOT NULL DEFAULT '',
+            year INTEGER,
             city TEXT NOT NULL DEFAULT '',
             status TEXT NOT NULL DEFAULT 'available',
+            fuel_type TEXT NOT NULL DEFAULT 'petrol',
+            ev_eligible INTEGER NOT NULL DEFAULT 0,
+            battery_capacity_kwh REAL,
+            usable_range_km REAL,
+            energy_consumption_kwh_per_km REAL,
+            charging_connector TEXT NOT NULL DEFAULT '',
+            charging_power_kw REAL,
+            charging_status TEXT NOT NULL DEFAULT 'unknown',
+            energy_price_per_kwh_minor INTEGER,
+            seating_capacity INTEGER NOT NULL DEFAULT 4,
+            luggage_capacity INTEGER NOT NULL DEFAULT 0,
+            ownership_type TEXT NOT NULL DEFAULT 'owned',
+            branch_name TEXT NOT NULL DEFAULT '',
+            gps_provider TEXT NOT NULL DEFAULT '',
+            rc_expiry TEXT,
+            insurance_expiry TEXT,
+            puc_expiry TEXT,
+            notes TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             UNIQUE(organization_id, registration_number)
@@ -212,9 +232,11 @@ def initialize_domain_schema(conn) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_domain_customers_org ON domain_customers(organization_id, status);
         CREATE INDEX IF NOT EXISTS idx_domain_drivers_org ON domain_drivers(organization_id, status);
+        CREATE INDEX IF NOT EXISTS idx_domain_drivers_user_org ON domain_drivers(user_id, organization_id);
         CREATE INDEX IF NOT EXISTS idx_domain_vehicles_org ON domain_vehicles(organization_id, status);
         CREATE INDEX IF NOT EXISTS idx_domain_bookings_org ON domain_bookings(organization_id, status, scheduled_at);
         CREATE INDEX IF NOT EXISTS idx_domain_duties_org ON domain_duties(organization_id, status, reporting_at);
+        CREATE INDEX IF NOT EXISTS idx_domain_duties_driver ON domain_duties(driver_id, organization_id, status, reporting_at);
         CREATE INDEX IF NOT EXISTS idx_domain_proofs_duty ON domain_duty_proofs(duty_id, captured_at);
         CREATE INDEX IF NOT EXISTS idx_domain_track_points_duty ON domain_track_points(duty_id, recorded_at);
         CREATE INDEX IF NOT EXISTS idx_domain_sync_org_status ON domain_sync_operations(organization_id, status, created_at);
@@ -222,6 +244,33 @@ def initialize_domain_schema(conn) -> None:
         CREATE INDEX IF NOT EXISTS idx_domain_invoices_org ON domain_invoices(organization_id, status);
         """
     )
+    # Additive local migrations keep existing SQLite previews usable while the
+    # Supabase vehicles table remains the production source of truth.
+    vehicle_columns = {row["name"] for row in conn.execute("PRAGMA table_info(domain_vehicles)").fetchall()}
+    for column, definition in {
+        "vehicle_group": "TEXT NOT NULL DEFAULT ''",
+        "year": "INTEGER",
+        "fuel_type": "TEXT NOT NULL DEFAULT 'petrol'",
+        "ev_eligible": "INTEGER NOT NULL DEFAULT 0",
+        "battery_capacity_kwh": "REAL",
+        "usable_range_km": "REAL",
+        "energy_consumption_kwh_per_km": "REAL",
+        "charging_connector": "TEXT NOT NULL DEFAULT ''",
+        "charging_power_kw": "REAL",
+        "charging_status": "TEXT NOT NULL DEFAULT 'unknown'",
+        "energy_price_per_kwh_minor": "INTEGER",
+        "seating_capacity": "INTEGER NOT NULL DEFAULT 4",
+        "luggage_capacity": "INTEGER NOT NULL DEFAULT 0",
+        "ownership_type": "TEXT NOT NULL DEFAULT 'owned'",
+        "branch_name": "TEXT NOT NULL DEFAULT ''",
+        "gps_provider": "TEXT NOT NULL DEFAULT ''",
+        "rc_expiry": "TEXT",
+        "insurance_expiry": "TEXT",
+        "puc_expiry": "TEXT",
+        "notes": "TEXT NOT NULL DEFAULT ''",
+    }.items():
+        if column not in vehicle_columns:
+            conn.execute(f"ALTER TABLE domain_vehicles ADD COLUMN {column} {definition}")
 
 
 def _json(value, fallback):
@@ -416,10 +465,37 @@ def _create_vehicle(conn, user, payload, ip):
     registration = _text(payload, "registration_number").upper()
     if not registration:
         raise DomainError(400, "Registration number is required", "validation_error")
+    if conn.execute("SELECT 1 FROM domain_vehicles WHERE organization_id = ? AND registration_number = ?", (org, registration)).fetchone():
+        raise DomainError(409, "A vehicle with this registration already exists", "duplicate_vehicle")
     vehicle_id = new_id("veh")
     now = now_iso()
-    conn.execute("INSERT INTO domain_vehicles(id, organization_id, registration_number, vehicle_type, make_model, city, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'available', ?, ?)", (vehicle_id, org, registration, _text(payload, "vehicle_type", "sedan"), _text(payload, "make_model"), _text(payload, "city"), now, now))
-    _audit(conn, user, "vehicle.created", "vehicle", vehicle_id, ip, {})
+    values = (
+        vehicle_id, org, registration, _text(payload, "vehicle_type", "sedan", 40),
+        _text(payload, "vehicle_group", maximum=80), _text(payload, "make_model", maximum=120),
+        _int(payload, "year", 0) or None, _text(payload, "city", maximum=80),
+        _text(payload, "status", "available", 24), _text(payload, "fuel_type", "petrol", 30),
+        1 if payload.get("ev_eligible") or str(payload.get("fuel_type", "")).lower() in {"ev", "electric"} else 0,
+        _float(payload, "battery_capacity_kwh", None),
+        _float(payload, "usable_range_km", None),
+        _float(payload, "energy_consumption_kwh_per_km", None),
+        _text(payload, "charging_connector", maximum=80),
+        _float(payload, "charging_power_kw", None),
+        _text(payload, "charging_status", "unknown", 24),
+        _int(payload, "energy_price_per_kwh_minor", 0) or None,
+        _int(payload, "seating_capacity", 4), _int(payload, "luggage_capacity", 0),
+        _text(payload, "ownership_type", "owned", 30), _text(payload, "branch_name", maximum=100),
+        _text(payload, "gps_provider", maximum=80), _text(payload, "rc_expiry", maximum=40) or None,
+        _text(payload, "insurance_expiry", maximum=40) or None, _text(payload, "puc_expiry", maximum=40) or None,
+        _text(payload, "notes", maximum=500), now, now,
+    )
+    conn.execute("""INSERT INTO domain_vehicles(
+        id, organization_id, registration_number, vehicle_type, vehicle_group, make_model, year, city, status,
+        fuel_type, ev_eligible, battery_capacity_kwh, usable_range_km, energy_consumption_kwh_per_km,
+        charging_connector, charging_power_kw, charging_status, energy_price_per_kwh_minor,
+        seating_capacity, luggage_capacity, ownership_type, branch_name, gps_provider, rc_expiry,
+        insurance_expiry, puc_expiry, notes, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", values)
+    _audit(conn, user, "vehicle.created", "vehicle", vehicle_id, ip, {"registration_number": registration})
     return {"ok": True, "item": _serialize(conn.execute("SELECT * FROM domain_vehicles WHERE id = ?", (vehicle_id,)).fetchone())}
 
 

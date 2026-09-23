@@ -692,7 +692,16 @@ def _soft_update(conn, user, route, method, payload, ip):
     parts = route.split("/")
     if len(parts) != 4 or parts[1] != "api" or parts[2] not in {"customers", "drivers", "vehicles", "suppliers"}: return None
     org = _org(user); _staff(user)
-    config = {"customers": ("domain_customers", ("name", "email", "phone", "gstin", "status")), "drivers": ("domain_drivers", ("full_name", "phone", "license_number", "city", "status")), "vehicles": ("domain_vehicles", ("registration_number", "vehicle_type", "make_model", "city", "status")), "suppliers": ("domain_suppliers", ("name", "email", "phone", "gstin", "status"))}
+    config = {
+        "customers": ("domain_customers", ("name", "email", "phone", "gstin", "status")),
+        "drivers": ("domain_drivers", ("full_name", "phone", "license_number", "city", "status")),
+        "vehicles": ("domain_vehicles", (
+            "registration_number", "vehicle_type", "vehicle_group", "make_model", "year", "city", "status",
+            "fuel_type", "seating_capacity", "luggage_capacity", "ownership_type", "branch_name",
+            "gps_provider", "rc_expiry", "insurance_expiry", "puc_expiry", "notes",
+        )),
+        "suppliers": ("domain_suppliers", ("name", "email", "phone", "gstin", "status")),
+    }
     table, allowed = config[parts[2]]; entity_id = parts[3]
     row = conn.execute(f"SELECT * FROM {table} WHERE id = ? AND organization_id = ?", (entity_id, org)).fetchone()
     if not row: raise DomainError(404, "Record not found", "not_found")
@@ -701,9 +710,16 @@ def _soft_update(conn, user, route, method, payload, ip):
         if conn.execute(f"SELECT 1 FROM domain_duties WHERE organization_id = ? AND {field} = ? AND status NOT IN ('completed','cancelled') LIMIT 1", (org, entity_id)).fetchone():
             raise DomainError(409, "This record is referenced by an open duty", "open_duty_reference")
     updates = []; values = []
+    numeric_vehicle_fields = {"year", "seating_capacity", "luggage_capacity"}
     for key in allowed:
         if key in payload:
-            updates.append(f"{key} = ?"); values.append(str(payload[key] or "").strip())
+            if parts[2] == "vehicles" and key in numeric_vehicle_fields:
+                value = int(payload[key]) if payload[key] not in (None, "") else None
+                if value is not None and value < 0:
+                    raise DomainError(400, f"{key} cannot be negative", "validation_error")
+            else:
+                value = str(payload[key] or "").strip()
+            updates.append(f"{key} = ?"); values.append(value)
     if not updates: return {"ok": True, "item": _serialize(row)}
     updates.append("updated_at = ?"); values.extend([now_iso(), entity_id, org])
     conn.execute(f"UPDATE {table} SET {', '.join(updates)} WHERE id = ? AND organization_id = ?", values)

@@ -30,12 +30,16 @@ import uuid
 from http import cookies
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from functools import partial
+from functools import lru_cache, partial
 from urllib.parse import urlsplit
 
 from backend_domain import DEFAULT_PROVIDERS, DomainError, handle_domain, initialize_domain_schema, seed_domain_data
 from backend_features import handle_feature, initialize_feature_schema, seed_feature_data
 from backend_extended import handle_extended, initialize_extended_schema
+from backend_network import handle_network, initialize_network_schema
+from backend_p0 import handle_p0, initialize_p0_schema
+from backend_phase12 import handle_phase12, initialize_phase12_schema
+from backend_phase3 import handle_phase3, initialize_phase3_schema
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("AXIOM_DATA_DIR", ROOT / "data"))
@@ -52,6 +56,8 @@ LOGIN_FAILURE_WINDOW = 15 * 60
 # Small in-process guard for the local prototype. Production should use Redis.
 LOGIN_FAILURES: dict[str, list[float]] = {}
 LOGIN_FAILURE_LOCK = threading.Lock()
+DB_PRAGMA_LOCK = threading.Lock()
+WAL_DATABASES: set[str] = set()
 
 
 class APIError(Exception):
@@ -75,11 +81,19 @@ def new_id(prefix: str) -> str:
 
 
 def db_connection() -> sqlite3.Connection:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA busy_timeout = 5000")
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA temp_store = MEMORY")
+    database_key = str(DB_PATH.resolve())
+    if database_key not in WAL_DATABASES:
+        with DB_PRAGMA_LOCK:
+            if database_key not in WAL_DATABASES:
+                conn.execute("PRAGMA journal_mode = WAL")
+                WAL_DATABASES.add(database_key)
     return conn
 
 
@@ -240,6 +254,10 @@ def initialize_database() -> None:
         initialize_feature_schema(conn)
         seed_feature_data(conn)
         initialize_extended_schema(conn)
+        initialize_network_schema(conn)
+        initialize_p0_schema(conn)
+        initialize_phase12_schema(conn)
+        initialize_phase3_schema(conn)
         conn.execute("DELETE FROM sessions WHERE expires_at <= ?", (utc_now(),))
 
 
@@ -408,6 +426,18 @@ def record_login_failure(key: str) -> None:
 def clear_login_failures(key: str) -> None:
     with LOGIN_FAILURE_LOCK:
         LOGIN_FAILURES.pop(key, None)
+
+
+@lru_cache(maxsize=64)
+def static_body(path_name: str, mtime_ns: int, size: int, use_gzip: bool) -> bytes:
+    """Cache static payloads by file version and encoding.
+
+    The dependency-free server previously reread and recompressed the 350KB
+    console HTML on every request. The mtime/size key invalidates the cache
+    automatically when a file changes during local development.
+    """
+    raw = Path(path_name).read_bytes()
+    return gzip.compress(raw, compresslevel=9, mtime=0) if use_gzip else raw
 
 
 class AxiomFleetHandler(SimpleHTTPRequestHandler):
@@ -636,15 +666,31 @@ class AxiomFleetHandler(SimpleHTTPRequestHandler):
             self._json(200, {"ok": True}, cookie=clear_cookie())
 
     def _api_domain(self, method: str) -> None:
-        payload = self._read_json() if method in {"POST", "PATCH"} else {}
+        payload = self._read_json() if method in {"POST", "PATCH", "DELETE"} else {}
         with db_connection() as conn:
             user = self._require_user(conn)
-            result = handle_extended(conn, user, method, self.path, payload, self.client_address[0])
+            route = urlsplit(self.path).path.rstrip("/") or "/"
+            mutation = method in {"POST", "PATCH", "DELETE"}
+            before_audit = conn.execute("SELECT id FROM audit_events WHERE user_id = ? ORDER BY rowid DESC LIMIT 1", (user["id"],)).fetchone() if mutation else None
+            result = handle_phase3(conn, user, method, self.path, payload, self.client_address[0])
+            if result is None:
+                result = handle_phase12(conn, user, method, self.path, payload, self.client_address[0])
+            if result is None:
+                result = handle_p0(conn, user, method, self.path, payload, self.client_address[0])
+            if result is None:
+                result = handle_network(conn, user, method, self.path, payload, self.client_address[0])
+            if result is None:
+                result = handle_extended(conn, user, method, self.path, payload, self.client_address[0])
             if result is None:
                 result = handle_feature(conn, user, method, self.path, payload, self.client_address[0])
             if result is None:
                 result = handle_domain(conn, user, method, self.path, payload, self.client_address[0])
-            route = urlsplit(self.path).path.rstrip("/")
+            if mutation and isinstance(result, dict):
+                latest = conn.execute("SELECT id FROM audit_events WHERE user_id = ? ORDER BY rowid DESC LIMIT 1", (user["id"],)).fetchone()
+                if latest is None or (before_audit and latest["id"] == before_audit["id"]):
+                    audit(conn, user["id"], "mutation.completed", "http_mutation", route, self.client_address[0], {"method": method})
+                    latest = conn.execute("SELECT id FROM audit_events WHERE user_id = ? ORDER BY rowid DESC LIMIT 1", (user["id"],)).fetchone()
+                result = {**result, "audit_reference": result.get("audit_reference") or (latest["id"] if latest else None), "request_reference": self.headers.get("X-Request-ID") or new_id("req")}
             created = method == "POST" and (route in {"/api/customers", "/api/drivers", "/api/vehicles", "/api/bookings", "/api/duties", "/api/invoices", "/api/payments", "/api/branches", "/api/suppliers", "/api/price-books", "/api/employees", "/api/policies", "/api/documents", "/api/invitations", "/api/notifications", "/api/tickets", "/api/privacy/requests"} or route.endswith(("/proof", "/track", "/expenses", "/items")))
             self._json(201 if created else 200, result)
 
@@ -652,7 +698,7 @@ class AxiomFleetHandler(SimpleHTTPRequestHandler):
         route = urlsplit(self.path).path.rstrip("/") or "/"
         if method == "OPTIONS":
             self.send_response(204)
-            self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-ID")
             self.send_header("Content-Length", "0")
             self._common_headers()
@@ -676,7 +722,7 @@ class AxiomFleetHandler(SimpleHTTPRequestHandler):
                 self._api_logout()
             elif route.startswith("/api/public/payment-links/") and method in {"GET", "POST"}:
                 self._api_public_payment_link(method, route)
-            elif route.startswith(("/api/overview", "/api/customers", "/api/drivers", "/api/vehicles", "/api/bookings", "/api/duties", "/api/invoices", "/api/payments", "/api/sync", "/api/branches", "/api/suppliers", "/api/price-books", "/api/documents", "/api/invitations", "/api/employees", "/api/policies", "/api/approvals", "/api/notifications", "/api/reports", "/api/audit", "/api/tickets", "/api/privacy", "/api/integrations", "/api/organization", "/api/settings", "/api/onboarding", "/api/setup", "/api/duplicates", "/api/receipts", "/api/supplier-bills", "/api/costs", "/api/vehicle-costs", "/api/supplier-payouts", "/api/driver-payouts", "/api/financial-actions", "/api/reconciliations", "/api/approval-steps", "/api/admin", "/api/network", "/api/alerts", "/api/geofences", "/api/passenger", "/api/devices", "/api/practice-duties", "/api/webhooks", "/api/trips", "/api/updates", "/api/sla", "/api/tax", "/api/capacity", "/api/billing-notes", "/api/payment-links", "/api/jobs", "/api/security")):
+            elif route.startswith(("/api/overview", "/api/customers", "/api/drivers", "/api/vehicles", "/api/bookings", "/api/duties", "/api/invoices", "/api/payments", "/api/sync", "/api/branches", "/api/suppliers", "/api/price-books", "/api/documents", "/api/invitations", "/api/employees", "/api/policies", "/api/approvals", "/api/notifications", "/api/reports", "/api/audit", "/api/tickets", "/api/privacy", "/api/integrations", "/api/organization", "/api/settings", "/api/onboarding", "/api/setup", "/api/duplicates", "/api/receipts", "/api/supplier-bills", "/api/costs", "/api/vehicle-costs", "/api/supplier-payouts", "/api/driver-payouts", "/api/financial-actions", "/api/reconciliations", "/api/approval-steps", "/api/admin", "/api/network", "/api/alerts", "/api/geofences", "/api/passenger", "/api/devices", "/api/practice-duties", "/api/webhooks", "/api/trips", "/api/updates", "/api/sla", "/api/tax", "/api/capacity", "/api/billing-notes", "/api/payment-links", "/api/jobs", "/api/security", "/api/masters", "/api/operations", "/api/safety", "/api/permissions", "/api/mobile", "/api/views", "/api/phase3")):
                 self._api_domain(method)
             else:
                 raise APIError(404, "API route not found", "not_found")
@@ -698,15 +744,32 @@ class AxiomFleetHandler(SimpleHTTPRequestHandler):
             super().do_HEAD() if head_only else super().do_GET()
             return
 
-        raw = path.read_bytes()
+        stat_result = path.stat()
+        mtime_ns = stat_result.st_mtime_ns
+        size = stat_result.st_size
+        etag = f'"{mtime_ns:x}-{size:x}"'
         accepts_gzip = "gzip" in self.headers.get("Accept-Encoding", "").lower()
         use_gzip = accepts_gzip and path.suffix.lower() in COMPRESSIBLE
-        body = gzip.compress(raw, compresslevel=9) if use_gzip else raw
+        last_modified = email.utils.formatdate(stat_result.st_mtime, usegmt=True)
 
+        if self.headers.get("If-None-Match") == etag:
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.send_header("Last-Modified", last_modified)
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self._common_headers()
+            if use_gzip:
+                self.send_header("Vary", "Accept-Encoding")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+
+        body = static_body(str(path), mtime_ns, size, use_gzip)
         self.send_response(200)
         self.send_header("Content-Type", self.guess_type(str(path)))
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Last-Modified", email.utils.formatdate(path.stat().st_mtime, usegmt=True))
+        self.send_header("ETag", etag)
+        self.send_header("Last-Modified", last_modified)
         self.send_header("Cache-Control", "public, max-age=3600")
         self._common_headers()
         if use_gzip:
@@ -737,6 +800,12 @@ class AxiomFleetHandler(SimpleHTTPRequestHandler):
     def do_PATCH(self) -> None:  # noqa: N802 - stdlib handler API
         if self._is_api():
             self._handle_api("PATCH")
+        else:
+            self.send_error(405, "Method Not Allowed")
+
+    def do_DELETE(self) -> None:  # noqa: N802 - stdlib handler API
+        if self._is_api():
+            self._handle_api("DELETE")
         else:
             self.send_error(405, "Method Not Allowed")
 

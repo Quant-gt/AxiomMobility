@@ -4,4 +4,33 @@ __pycache__/
 data/*.sqlite3
 data/*.sqlite3-shm
 data/*.sqlite3-wal
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.log
+*.tsbuildinfo
+
+# Local JavaScript/Expo dependencies and generated output
+node_modules/
+**/node_modules/
+.expo/
+**/.expo/
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+coverage/
+**/coverage/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
 supabase/config.js
+
+# Editor/OS files
+.DS_Store
+.vscode/
+.idea/

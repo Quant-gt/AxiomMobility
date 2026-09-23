@@ -118,7 +118,84 @@ if migration_path.is_file():
     migration = migration_path.read_text()
     required_domain_contracts = ('create policy customers_member_select', 'create policy sync_operations_user_access', 'create or replace function public.transition_duty', 'create or replace function public.issue_invoice', 'create or replace function public.record_payment', 'create or replace function public.record_expense', 'create or replace function public.enqueue_sync_operation', 'create or replace function public.create_invitation', 'create or replace function public.accept_invitation', 'create table if not exists public.employees', 'create table if not exists public.support_tickets', 'create table if not exists public.einvoice_records', 'create table if not exists public.collection_actions', 'create table if not exists public.onboarding_states', 'create table if not exists public.supplier_bills', 'create table if not exists public.cost_entries', 'create table if not exists public.approval_steps', 'create table if not exists public.network_edges', 'create table if not exists public.report_exports', 'create table if not exists public.retention_locks', 'create policy einvoice_records_billing_write', 'create policy collection_actions_billing_write')
     check('Supabase domain/RLS/RPC contracts are present', all(contract in migration for contract in required_domain_contracts))
+network_migration_path = ROOT / 'supabase/migrations/20260922000000_axiom_network_mvp.sql'
+check('Axiom Network migration is present', network_migration_path.is_file())
+if network_migration_path.is_file():
+    network_migration = network_migration_path.read_text()
+    network_contracts = (
+        'create table if not exists public.network_programs',
+        'create table if not exists public.network_requirements',
+        'create table if not exists public.network_requirement_versions',
+        'create table if not exists public.network_vendor_profiles',
+        'create table if not exists public.network_match_runs',
+        'create table if not exists public.network_quote_versions',
+        'create table if not exists public.network_comparisons',
+        'create table if not exists public.network_awards',
+        'create table if not exists public.network_activation_checks',
+        'create table if not exists public.network_service_orders',
+        'create table if not exists public.network_scorecards',
+        'create table if not exists public.network_settlements',
+        'create or replace function public.network_activate_award',
+        'network_quote_versions_tenant_access',
+        'network_requirements_tenant_access'
+    )
+    check('Axiom Network Supabase/RLS/RPC contracts are present', all(contract in network_migration for contract in network_contracts))
+network_backend_path = ROOT / 'backend_network.py'
+check('local Axiom Network handler is present', network_backend_path.is_file() and 'def handle_network' in network_backend_path.read_text())
+check('Network smoke contract test is present', (ROOT / 'network_mvp_smoke_test.py').is_file())
+check('Supabase adapter exposes Network v1 boundary', 'supabaseNetworkRequest' in (ROOT / 'supabase/client.js').read_text() and "path.startsWith('/api/network/v1')" in (ROOT / 'supabase/client.js').read_text())
+p0_backend_path = ROOT / 'backend_p0.py'
+p0_migration_path = ROOT / 'supabase/migrations/20260923000000_axiom_p0_foundations.sql'
+p0_client = (ROOT / 'supabase/client.js').read_text()
+check('P0 local handler is wired', p0_backend_path.is_file() and 'def handle_p0' in p0_backend_path.read_text() and 'handle_p0(conn' in (ROOT / 'server.py').read_text())
+check('P0 Supabase migration is present', p0_migration_path.is_file() and 'create table if not exists public.p0_route_plans' in p0_migration_path.read_text() and 'p0_audit_row' in p0_migration_path.read_text())
+check('P0 Supabase adapter mappings are present', 'supabaseP0Request' in p0_client and 'p0-orchestrator' in p0_client and '/api/permissions' in p0_client)
+check('P0 Planning/Safety UI wiring is present', 'handlePlanningAction' in html and 'handleSafetyAction' in html and 'data-planning-action' in html and 'data-safety-action' in html)
+check('P0 smoke coverage is present', (ROOT / 'p0_smoke_test.py').is_file())
 check('focused uncovered smoke coverage is present', (ROOT / 'uncovered_smoke_test.py').is_file())
+phase12_backend = ROOT / 'backend_phase12.py'
+phase12_migration = ROOT / 'supabase/migrations/20260924000000_axiom_phase12_foundations.sql'
+phase12_client = (ROOT / 'supabase/client.js').read_text()
+check('Phase 1/2 local handler is wired', phase12_backend.is_file() and 'def handle_phase12' in phase12_backend.read_text() and 'handle_phase12(conn' in (ROOT / 'server.py').read_text())
+phase12_sql = phase12_migration.read_text() if phase12_migration.is_file() else ''
+check('Phase 1/2 migration is present', phase12_migration.is_file() and 'create table if not exists public.phase12_master_records' in phase12_sql and 'phase12_master_records' in phase12_sql and 'organization_id is not null' in phase12_sql and 'is_platform_user()' in phase12_sql)
+phase12_function = ROOT / 'supabase/functions/phase12-orchestrator/index.ts'
+check('Phase 1/2 Supabase boundary mappings are present', 'phase12-orchestrator' in phase12_client and '/api/mobile/home' in phase12_client and '/api/operations/live-board' in phase12_client and phase12_function.is_file() and 'RLS' in phase12_function.read_text() and 'idempotency_key' in phase12_function.read_text())
+check('Phase 1/2 UI state and workflows are present', 'state.phase12Data' in html and 'renderLoadingState' in html and 'openSavedViewModal' in html and 'Mobile operations home' in html)
+check('Phase 1/2 smoke coverage is present', (ROOT / 'phase12_smoke_test.py').is_file())
+phase3_backend = ROOT / 'backend_phase3.py'
+phase3_migration = ROOT / 'supabase/migrations/20260925000000_axiom_phase3_moat.sql'
+phase3_function = ROOT / 'supabase/functions/phase3-orchestrator/index.ts'
+phase3_client = (ROOT / 'supabase/client.js').read_text()
+phase3_sql = phase3_migration.read_text() if phase3_migration.is_file() else ''
+phase3_contracts = ('phase3_predictive_alerts', 'phase3_vendor_quality_snapshots', 'phase3_simulations', 'phase3_variance_findings', 'phase3_sustainability_trips', 'phase3_regions', 'phase3_exchange_rates')
+phase3_routes = ('/api/phase3/predictive-alerts', '/api/phase3/vendor-quality/graph', '/api/phase3/simulations', '/api/phase3/variance/findings', '/api/phase3/sustainability/summary', '/api/phase3/regions')
+check('Phase 3 local handler is wired', phase3_backend.is_file() and 'def handle_phase3' in phase3_backend.read_text() and 'handle_phase3(conn' in (ROOT / 'server.py').read_text())
+check('Phase 3 migration and tenant RLS are present', phase3_migration.is_file() and all(f'public.{name}' in phase3_sql for name in phase3_contracts) and 'has_permission' in phase3_sql and 'p0_audit_row' in phase3_sql)
+check('Phase 3 authenticated Edge/browser boundary is present', phase3_function.is_file() and 'phase3-orchestrator' in phase3_client and 'supabasePhase3Request' in phase3_client and 'getUser' in phase3_function.read_text() and all(route in phase3_function.read_text() for route in phase3_routes))
+check('Phase 3 UI intelligence surface is present', 'data-page="phase3"' in html and 'function renderPhase3()' in html and 'state.phase3Data' in html and 'handlePhase3Action' in html)
+check('Phase 3 OpenAPI routes are declared', openapi_path.is_file() and all(route in openapi_path.read_text() for route in phase3_routes))
+check('Phase 3 smoke coverage is present', (ROOT / 'phase3_smoke_test.py').is_file() and 'RESULT Phase 3 smoke test passed' in (ROOT / 'phase3_smoke_test.py').read_text())
+check('Phase 3 documentation and production gates are present', (ROOT / 'docs/phase3-moat.md').is_file() and 'Supabase production boundary' in (ROOT / 'docs/phase3-moat.md').read_text() and 'physical Android' in (ROOT / 'docs/phase3-moat.md').read_text())
+# Product acceptance criteria contracts: these are intentionally source-level guards
+# in addition to browser/WCAG testing at the release gate.
+acceptance_contracts = {
+    'loading skeleton and recovery': 'function renderLoadingState()' in html and 'data-action="retry-hydration"' in html,
+    'empty states explain next action': 'class="table-empty"' in html and 'Add the first' in html,
+    'sticky long-form save actions': '.modal-footer { position: sticky' in html and 'settings-save-bar' in html and 'master-form-section' in html,
+    'field-level accessible validation': 'function validateFields' in html and 'aria-invalid' in html and 'inline-error' in html,
+    'search result count and selection': 'result${list.length' in html and 'selected' in html and 'result_count' in (ROOT / 'backend_phase3.py').read_text(),
+    'mobile table card equivalents': 'mobile-card-table' in html and 'decorateResponsiveTables' in html,
+    'bulk edit assign archive workflows': 'bulk-duty-edit' in html and 'bulk-duty-archive' in html and 'bulk_assign' in (ROOT / 'backend_phase12.py').read_text(),
+    'saved views persist and reapply': '/api/views' in html and 'data-saved-view' in html and 'Saved view applied' in html,
+    'keyboard shortcuts and command palette': 'ctrlKey' in html and 'openCommandPalette' in html and 'commandPaletteInput' in html,
+    'mutation audit references': 'audit_reference' in html and 'toastAudit' in html,
+    'error recovery action': 'toastRecovery' in html and 'recoveryAction' in html,
+    'regionalized labels and formatting': 'regionalSettings' in html and 'formatDateTime' in html and 'regionalTaxLabel' in html and 'formatAmount' in html,
+    'sustainability intelligence surface': all(token in html for token in ('ev-eligibility','charging-stations','total_avoided_emissions_kg','emissions_per_passenger_km_g','sustainability-report-v2')),
+}
+for name, ok in acceptance_contracts.items():
+    check(f'Acceptance · {name}', ok)
 check('domain calculation engine is present', (ROOT / 'domain_engine.py').is_file())
 check('driver offline shell manifest is present', (ROOT / 'driver-manifest.json').is_file() and (ROOT / 'driver-sw.js').is_file())
 check('service worker registration is wired', "navigator.serviceWorker.register('/driver-sw.js')" in html)

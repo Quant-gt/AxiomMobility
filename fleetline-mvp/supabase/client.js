@@ -13,6 +13,14 @@
   );
   const baseUrl = String(config.url || '').replace(/\/$/, '');
   const storageKey = 'axiomfleet_supabase_session';
+  const REQUEST_TIMEOUT_MS = 15000;
+
+  async function fetchWithTimeout(url, options = {}) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try { return await fetch(url, { ...options, signal: controller.signal }); }
+    finally { clearTimeout(timer); }
+  }
 
   function readSession() {
     try { return JSON.parse(localStorage.getItem(storageKey) || 'null'); } catch (_) { return null; }
@@ -45,14 +53,14 @@
     return payload;
   }
   async function authRequest(path, options = {}, token = '') {
-    const response = await fetch(`${baseUrl}/auth/v1${path}`, {
+    const response = await fetchWithTimeout(`${baseUrl}/auth/v1${path}`, {
       ...options,
       headers: { ...authHeaders(token), ...(options.headers || {}) }
     });
     return parseResponse(response);
   }
   async function dataRequest(path, options = {}, token = '') {
-    const response = await fetch(`${baseUrl}/rest/v1/${path}`, {
+    const response = await fetchWithTimeout(`${baseUrl}/rest/v1/${path}`, {
       ...options,
       headers: {
         ...authHeaders(token),
@@ -63,7 +71,7 @@
     return parseResponse(response);
   }
   async function rpc(name, body, token) {
-    const response = await fetch(`${baseUrl}/rest/v1/rpc/${name}`, {
+    const response = await fetchWithTimeout(`${baseUrl}/rest/v1/rpc/${name}`, {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify(body)
@@ -71,7 +79,7 @@
     return parseResponse(response);
   }
   async function edgeFunction(name, body, token) {
-    const response = await fetch(`${baseUrl}/functions/v1/${name}`, {
+    const response = await fetchWithTimeout(`${baseUrl}/functions/v1/${name}`, {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify(body)
@@ -244,6 +252,282 @@
       notes: payload.notes || null
     };
   }
+  async function supabasePhase3Request(path, options = {}) {
+    const url = new URL(path, window.location.origin);
+    const route = url.pathname.replace(/\/$/, '') || '/';
+    if (!route.startsWith('/api/phase3')) return undefined;
+    const session = await refreshIfNeeded();
+    if (!session?.access_token) throw new Error('Sign in required.');
+    const identity = await currentUser();
+    let organizationId = identity.user.organization?.id || null;
+    if (!organizationId) organizationId = await activeOrganizationId();
+    let body = {};
+    try { body = JSON.parse(options.body || '{}'); } catch (_) { body = {}; }
+    return edgeFunction('phase3-orchestrator', {
+      path: route,
+      method: options.method || 'GET',
+      organization_id: organizationId,
+      query: Object.fromEntries(url.searchParams.entries()),
+      body
+    }, session.access_token);
+  }
+  async function supabaseP0Request(path, options = {}) {
+    const url = new URL(path, window.location.origin);
+    const route = url.pathname.replace(/\/$/, '') || '/';
+    const phase12Boundary = route === '/api/masters/registry' || route.startsWith('/api/masters/registry/') || route === '/api/mobile/home' || route === '/api/views' || route.startsWith('/api/views/') || route === '/api/operations/rosters' || route === '/api/operations/live-board' || /^\/api\/operations\/duties\/[^/]+\/eta$/.test(route) || route === '/api/operations/bulk' || route === '/api/safety/monitor' || route === '/api/safety/monitor/evaluate' || /^\/api\/safety\/incidents\/[^/]+\/(evidence|closure-approval)/.test(route) || route === '/api/network/v1/scorecard-formulas' || route === '/api/network/v1/scorecard-formulas/active' || route === '/api/network/v1/scorecard-disputes' || /^\/api\/network\/v1\/service-orders\/[^/]+\/(activation|replacements|scorecard|reconciliation)/.test(route) || route === '/api/permissions/bundles' || route === '/api/integrations/catalog' || route === '/api/integrations/config' || route === '/api/integrations/sync' || route === '/api/integrations/events';
+    if (phase12Boundary) {
+      const phaseSession = await refreshIfNeeded();
+      if (!phaseSession?.access_token) throw new Error('Sign in required.');
+      const phaseIdentity = await currentUser();
+      let phaseOrganizationId = phaseIdentity.user.organization?.id || null;
+      if (!phaseOrganizationId) { try { phaseOrganizationId = await activeOrganizationId(); } catch (_) { /* independent drivers can be resolved by the edge boundary */ } }
+      let phaseBody = {};
+      try { phaseBody = JSON.parse(options.body || '{}'); } catch (_) { phaseBody = {}; }
+      return edgeFunction('phase12-orchestrator', { path: route, method: options.method || 'GET', organization_id: phaseOrganizationId, query: Object.fromEntries(url.searchParams.entries()), body: phaseBody }, phaseSession.access_token);
+    }
+    const isP0 = route.startsWith('/api/masters') || route.startsWith('/api/operations/') || route.startsWith('/api/safety/') || route.startsWith('/api/permissions') || route.startsWith('/api/network/v1/regions') || route.startsWith('/api/network/v1/vendor-approvals') || route.startsWith('/api/network/v1/requirements/') || route.startsWith('/api/network/v1/messages') || route.startsWith('/api/network/v1/service-orders/') || route.startsWith('/api/network/v1/disputes') || route.startsWith('/api/network/v1/corrective-actions');
+    if (!isP0) return undefined;
+    const session = await refreshIfNeeded();
+    if (!session?.access_token) throw new Error('Sign in required.');
+    const method = options.method || 'GET';
+    let body = {};
+    try { body = JSON.parse(options.body || '{}'); } catch (_) { body = {}; }
+    const identity = await currentUser();
+    const organizationId = identity.user.organization?.id || await activeOrganizationId();
+    const limit = Math.min(Number(url.searchParams.get('limit') || 100), 100);
+    const list = async (table, extra = '') => {
+      const rows = await dataRequest(`${table}?organization_id=eq.${encodeURIComponent(organizationId)}&select=*&order=created_at.desc&limit=${limit}${extra}`, {}, session.access_token);
+      return { ok: true, items: rows, count: rows.length };
+    };
+    const insert = async (table, value, headers = {}) => {
+      const rows = await dataRequest(table, { method: 'POST', headers, body: JSON.stringify({ ...value, organization_id: organizationId }) }, session.access_token);
+      return { ok: true, item: Array.isArray(rows) ? rows[0] : rows };
+    };
+    const orchestrate = (command, value = body) => edgeFunction('p0-orchestrator', { command, path: route, method, organization_id: organizationId, body: value }, session.access_token);
+    const decode = (rows, jsonKeys = []) => rows.map(row => {
+      const item = { ...row };
+      jsonKeys.forEach(key => { if (typeof item[key] === 'string') { try { item[key] = JSON.parse(item[key]); } catch (_) {} } });
+      return item;
+    });
+
+    if (route === '/api/masters' && method === 'GET') {
+      const rows = await dataRequest(`p0_master_records?organization_id=eq.${encodeURIComponent(organizationId)}&select=kind,status`, {}, session.access_token);
+      const kinds = ['billing_items','duty_types','feedback_forms','labels','operating_regions','taxes','vehicle_groups'];
+      const counts = Object.fromEntries(kinds.map(kind => [kind, rows.filter(row => row.kind === kind && row.status !== 'archived').length]));
+      return { ok: true, counts, kinds };
+    }
+    const master = route.match(/^\/api\/masters\/([^/]+)(?:\/([^/]+)(?:\/(archive|restore))?)?$/);
+    if (master) {
+      const [, kind, id, action] = master;
+      if (!id && method === 'GET') {
+        const q = url.searchParams.get('q');
+        const statusValue = url.searchParams.get('status') || 'active';
+        let query = `p0_master_records?organization_id=eq.${encodeURIComponent(organizationId)}&kind=eq.${encodeURIComponent(kind)}&select=*&order=name.asc&limit=${limit}`;
+        if (statusValue !== 'all') query += `&status=eq.${encodeURIComponent(statusValue)}`;
+        if (q) query += `&or=(code.ilike.*${encodeURIComponent(q)}*,name.ilike.*${encodeURIComponent(q)}*)`;
+        return { ok: true, items: decode(await dataRequest(query, {}, session.access_token), ['config']) };
+      }
+      if (!id && method === 'POST') return insert('p0_master_records', { kind, code: String(body.code || '').toUpperCase(), name: body.name, status: body.status || 'active', version: 1, effective_from: body.effective_from || null, effective_to: body.effective_to || null, config: body.config || {}, created_by: session.user?.id || null });
+      if (id && method === 'GET') {
+        const rows = await dataRequest(`p0_master_records?id=eq.${encodeURIComponent(id)}&organization_id=eq.${encodeURIComponent(organizationId)}&select=*`, {}, session.access_token);
+        const versions = await dataRequest(`p0_master_versions?master_id=eq.${encodeURIComponent(id)}&organization_id=eq.${encodeURIComponent(organizationId)}&select=*&order=version.desc`, {}, session.access_token);
+        const item = decode(rows, ['config'])[0] || null;
+        if (item) item.versions = decode(versions, ['snapshot']);
+        return { ok: true, item };
+      }
+      if (id && action && method === 'POST') return orchestrate(`master.${action}`, { ...body, master_id: id, kind });
+      if (id && method === 'PATCH') return orchestrate('master.update', { ...body, master_id: id, kind });
+    }
+
+    if (route === '/api/operations/sites' && method === 'GET') return list('p0_sites');
+    if (route === '/api/operations/sites' && method === 'POST') return insert('p0_sites', { code: String(body.code || '').toUpperCase(), name: body.name, city: body.city || '', address: body.address || {}, status: body.status || 'active', created_by: session.user?.id || null });
+    if (route === '/api/operations/shifts' && method === 'GET') return list('p0_shifts', '&order=starts_at.asc');
+    if (route === '/api/operations/shifts' && method === 'POST') return insert('p0_shifts', { site_id: body.site_id || null, code: String(body.code || '').toUpperCase(), name: body.name, starts_at: body.starts_at, ends_at: body.ends_at, demand: body.demand || {}, status: body.status || 'active', created_by: session.user?.id || null });
+    if (route === '/api/operations/dispatch-board' && method === 'GET') return list('p0_roster_assignments', '&order=response_deadline.asc');
+
+    const plan = route.match(/^\/api\/operations\/route-plans(?:\/([^/]+)(?:\/(publish))?)?$/);
+    if (plan) {
+      const [, planId, planAction] = plan;
+      if (!planId && method === 'GET') return list('p0_route_plans', '&order=plan_date.desc,version.desc');
+      if (!planId && method === 'POST') return orchestrate('route_plan.create');
+      if (planId && planAction === 'publish' && method === 'POST') return orchestrate('route_plan.publish', { ...body, route_plan_id: planId });
+      if (planId && method === 'GET') {
+        const rows = await dataRequest(`p0_route_plans?id=eq.${encodeURIComponent(planId)}&organization_id=eq.${encodeURIComponent(organizationId)}&select=*`, {}, session.access_token);
+        const stops = await dataRequest(`p0_route_stops?route_plan_id=eq.${encodeURIComponent(planId)}&organization_id=eq.${encodeURIComponent(organizationId)}&select=*&order=sequence.asc`, {}, session.access_token);
+        const assignments = await dataRequest(`p0_roster_assignments?route_plan_id=eq.${encodeURIComponent(planId)}&organization_id=eq.${encodeURIComponent(organizationId)}&select=*&order=offered_at.asc`, {}, session.access_token);
+        const item = decode(rows, ['constraints','feasibility'])[0] || null;
+        if (item) { item.stops = decode(stops, ['pickup','dropoff']); item.assignments = assignments; }
+        return { ok: true, item };
+      }
+    }
+    const assignment = route.match(/^\/api\/operations\/assignments(?:\/([^/]+)(?:\/(accept|reject|expire))?)?$/);
+    if (assignment) {
+      const [, assignmentId, assignmentAction] = assignment;
+      if (!assignmentId && method === 'GET') return list('p0_roster_assignments', '&order=offered_at.desc');
+      if (!assignmentId && method === 'POST') return orchestrate('assignment.offer');
+      if (assignmentId && assignmentAction && method === 'POST') return orchestrate(`assignment.${assignmentAction}`, { ...body, assignment_id: assignmentId });
+      if (assignmentId && method === 'GET') { const rows = await dataRequest(`p0_roster_assignments?id=eq.${encodeURIComponent(assignmentId)}&organization_id=eq.${encodeURIComponent(organizationId)}&select=*`, {}, session.access_token); return { ok: true, item: rows[0] || null }; }
+    }
+    const replacement = route.match(/^\/api\/operations\/replacements(?:\/([^/]+))?$/);
+    if (replacement) {
+      const [, replacementId] = replacement;
+      if (!replacementId && method === 'GET') return list('p0_replacements');
+      if (!replacementId && method === 'POST') return insert('p0_replacements', { duty_id: body.duty_id, reason: body.reason || 'capacity_exception', status: 'open', replacement_driver_id: body.replacement_driver_id || null, replacement_vehicle_id: body.replacement_vehicle_id || null, due_at: body.due_at || null, created_by: session.user?.id || null });
+      if (replacementId && method === 'PATCH') return orchestrate('replacement.update', { ...body, replacement_id: replacementId });
+      if (replacementId && method === 'GET') { const rows = await dataRequest(`p0_replacements?id=eq.${encodeURIComponent(replacementId)}&organization_id=eq.${encodeURIComponent(organizationId)}&select=*`, {}, session.access_token); return { ok: true, item: rows[0] || null }; }
+    }
+
+    if (route === '/api/safety/policies' && method === 'GET') return list('p0_safety_policies', '&order=created_at.desc');
+    if (route === '/api/safety/policies' && method === 'POST') return insert('p0_safety_policies', { code: body.code, name: body.name, version: Number(body.version || 1), rules: body.rules || {}, status: body.status || 'active', created_by: session.user?.id || null });
+    if (route === '/api/safety/alerts' && method === 'POST') return orchestrate('safety.alert');
+    const incident = route.match(/^\/api\/safety\/incidents(?:\/([^/]+)(?:\/(acknowledge|investigate|contain|resolve|close))?)?$/);
+    if (incident) {
+      const [, incidentId, incidentAction] = incident;
+      if (!incidentId && method === 'GET') return list('p0_safety_incidents', '&order=opened_at.desc');
+      if (!incidentId && method === 'POST') return insert('p0_safety_incidents', { duty_id: body.duty_id || null, alert_type: body.alert_type || 'manual', severity: body.severity || 'medium', status: 'open', title: body.title, description: body.description || '', due_at: body.due_at || null, evidence: body.evidence || {}, opened_at: new Date().toISOString() });
+      if (incidentId && incidentAction && method === 'POST') return orchestrate(`safety.incident.${incidentAction}`, { ...body, incident_id: incidentId });
+      if (incidentId && method === 'GET') { const rows = await dataRequest(`p0_safety_incidents?id=eq.${encodeURIComponent(incidentId)}&organization_id=eq.${encodeURIComponent(organizationId)}&select=*`, {}, session.access_token); return { ok: true, item: rows[0] || null }; }
+    }
+    const safetyAction = route.match(/^\/api\/safety\/incidents\/([^/]+)\/actions(?:\/([^/]+))?$/);
+    if (safetyAction && method === 'GET') return list('p0_safety_actions', `&incident_id=eq.${encodeURIComponent(safetyAction[1])}`);
+    if (safetyAction && method === 'POST') return orchestrate('safety.corrective_action', { ...body, incident_id: safetyAction[1], action_id: safetyAction[2] || null });
+    if (route === '/api/safety/evaluate' && method === 'POST') return orchestrate('safety.evaluate');
+
+    if (route === '/api/permissions' && method === 'GET') {
+      const rows = await dataRequest(`p0_role_permissions?organization_id=eq.${encodeURIComponent(organizationId)}&select=*&order=role.asc,permission_key.asc`, {}, session.access_token);
+      const permissions = ['masters.read','masters.write','route_plans.read','route_plans.write','dispatch.read','dispatch.write','dispatch.respond','replacements.manage','safety.read','safety.incidents.create','safety.incidents.manage','network.regions.read','network.regions.write','network.vendor_approvals.read','network.vendor_approvals.write','network.lifecycle.write','network.messages.write','network.evaluations.write','network.metrics.write','network.scorecards.write','network.settlements.write','network.disputes.write','network.corrective_actions.write','permissions.read','permissions.write'];
+      return { ok: true, items: rows, permissions };
+    }
+    if (route === '/api/permissions/check' && method === 'POST') {
+      const memberships = await dataRequest(`organization_memberships?organization_id=eq.${encodeURIComponent(organizationId)}&user_id=eq.${encodeURIComponent(session.user?.id || '')}&status=eq.active&select=role`, {}, session.access_token);
+      const role = memberships[0]?.role || '';
+      const grants = await dataRequest(`p0_role_permissions?organization_id=eq.${encodeURIComponent(organizationId)}&role=eq.${encodeURIComponent(role)}&permission_key=eq.${encodeURIComponent(body.permission || '')}&select=allowed`, {}, session.access_token);
+      const defaults = grants.length ? Boolean(grants[0].allowed) : (await dataRequest(`role_permissions?role=eq.${encodeURIComponent(role)}&permission_key=eq.${encodeURIComponent(body.permission || '')}&select=permission_key`, {}, session.access_token)).length > 0;
+      return { ok: true, permission: body.permission || '', allowed: defaults, role };
+    }
+    const grant = route.match(/^\/api\/permissions\/grants(?:\/([^/]+))?$/);
+    if (grant && (method === 'POST' || method === 'PATCH')) {
+      const roleMap = { vendor: 'vendor_owner', corporate: 'corporate_admin', driver: 'driver' };
+      const value = { organization_id: organizationId, role: roleMap[body.role] || body.role, permission_key: body.permission, allowed: body.allowed !== false, created_by: session.user?.id || null, updated_at: new Date().toISOString() };
+      const rows = await dataRequest('p0_role_permissions', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(value) }, session.access_token);
+      return { ok: true, item: Array.isArray(rows) ? rows[0] : rows };
+    }
+
+    // Network P0 records share the invite-only Network auth context but use
+    // additive tables so legacy network collections remain untouched.
+    const suffix = route.replace('/api/network/v1', '') || '/';
+    const networkTable = {
+      '/regions': 'p0_network_regions',
+      '/vendor-approvals': 'p0_network_vendor_approvals',
+      '/messages': 'p0_network_messages',
+      '/disputes': 'p0_network_disputes',
+      '/corrective-actions': 'p0_network_corrective_actions'
+    }[suffix];
+    if (networkTable && method === 'GET') return list(networkTable);
+    if (networkTable && method === 'POST') return insert(networkTable, body);
+    if (route.match(/^\/api\/network\/v1\/regions\/[^/]+$/) && method === 'PATCH') return orchestrate('network.region.update');
+    const lifecycle = route.match(/^\/api\/network\/v1\/requirements\/([^/]+)\/lifecycle$/);
+    if (lifecycle && method === 'GET') return orchestrate('network.requirement.lifecycle', { requirement_id: lifecycle[1] });
+    if (lifecycle && method === 'POST') return orchestrate('network.requirement.transition', { ...body, requirement_id: lifecycle[1] });
+    const evaluation = route.match(/^\/api\/network\/v1\/requirements\/([^/]+)\/evaluations(?:\/([^/]+))?$/);
+    if (evaluation && method === 'GET') return list('p0_network_quote_evaluations', `&requirement_id=eq.${encodeURIComponent(evaluation[1])}`);
+    if (evaluation && method === 'POST') return insert('p0_network_quote_evaluations', { requirement_id: evaluation[1], quote_id: body.quote_id, version: Number(body.version || 1), commercial_score: Number(body.commercial_score || 0), quality_score: Number(body.quality_score || 0), risk_score: Number(body.risk_score || 0), total_score: Number(body.total_score || 0), sample_size: Number(body.sample_size || 0), confidence: body.confidence || 'cold_start', comments: body.comments || '', status: body.status || 'draft', created_by: session.user?.id || null });
+    const metric = route.match(/^\/api\/network\/v1\/service-orders\/([^/]+)\/metric-observations$/);
+    if (metric && method === 'GET') return list('p0_network_metric_observations', `&service_order_id=eq.${encodeURIComponent(metric[1])}`);
+    if (metric && method === 'POST') return insert('p0_network_metric_observations', { service_order_id: metric[1], vendor_profile_id: body.vendor_profile_id || null, metric_key: body.metric_key, value: Number(body.value || 0), unit: body.unit || '', sample_size: Number(body.sample_size || 0), source_event_ids: body.source_event_ids || [], formula_version: body.formula_version || 'v1', observed_at: body.observed_at || new Date().toISOString(), created_by: session.user?.id || null });
+    const score = route.match(/^\/api\/network\/v1\/service-orders\/([^/]+)\/scorecard-runs$/);
+    if (score && method === 'GET') return list('p0_network_scorecard_runs', `&service_order_id=eq.${encodeURIComponent(score[1])}`);
+    if (score && method === 'POST') return insert('p0_network_scorecard_runs', { service_order_id: score[1], period_start: body.period_start, period_end: body.period_end, formula_version: body.formula_version || 'v1', sample_size: Number(body.sample_size || 0), confidence: body.confidence || 'cold_start', score: Number(body.score || 0), metrics: body.metrics || {}, status: body.status || 'computed', created_by: session.user?.id || null });
+    const statement = route.match(/^\/api\/network\/v1\/service-orders\/([^/]+)\/settlement-statements(?:\/([^/]+)\/(approve))?$/);
+    if (statement && method === 'GET') return list('p0_network_settlement_statements', `&service_order_id=eq.${encodeURIComponent(statement[1])}`);
+    if (statement && method === 'POST' && statement[3]) return orchestrate('network.settlement.approve', { ...body, statement_id: statement[2] });
+    if (statement && method === 'POST') return insert('p0_network_settlement_statements', { service_order_id: statement[1], scorecard_run_id: body.scorecard_run_id || null, period_start: body.period_start, period_end: body.period_end, subtotal_paise: Number(body.subtotal_paise || 0), tax_paise: Number(body.tax_paise || 0), fee_paise: Number(body.fee_paise || 0), deduction_paise: Number(body.deduction_paise || 0), net_paise: Number(body.net_paise || 0), status: body.status || 'draft', reconciliation: body.reconciliation || {}, created_by: session.user?.id || null });
+    const readiness = route.match(/^\/api\/network\/v1\/service-orders\/([^/]+)\/readiness$/);
+    if (readiness && method === 'GET') return orchestrate('network.service_order.readiness', { service_order_id: readiness[1] });
+
+    return undefined;
+  }
+
+  async function supabaseNetworkRequest(path, options = {}) {
+    const session = await refreshIfNeeded();
+    if (!session?.access_token) throw new Error('Sign in required.');
+    const method = options.method || 'GET';
+    const url = new URL(path, window.location.origin);
+    const route = url.pathname.replace(/\/$/, '') || '/';
+    const suffix = route.replace('/api/network/v1', '') || '/';
+    let body = {};
+    try { body = JSON.parse(options.body || '{}'); } catch (_) { body = {}; }
+    const identity = await currentUser();
+    const organizationId = identity.user.organization?.id || await activeOrganizationId();
+    const list = async (table, filter = '') => {
+      const rows = await dataRequest(`${table}?organization_id=eq.${encodeURIComponent(organizationId)}&select=*&order=created_at.desc&limit=100${filter}`, {}, session.access_token);
+      return { ok: true, items: rows, count: rows.length };
+    };
+    const insert = async (table, value) => {
+      const rows = await dataRequest(table, { method: 'POST', body: JSON.stringify({ ...value, organization_id: organizationId }) }, session.access_token);
+      return { ok: true, item: Array.isArray(rows) ? rows[0] : rows };
+    };
+    if (suffix === '/feature-flag' && method === 'GET') {
+      const rows = await dataRequest(`network_feature_flags?organization_id=eq.${encodeURIComponent(organizationId)}&select=*`, {}, session.access_token);
+      return { ok: true, flag: rows[0] || { organization_id: organizationId, enabled: true, mode: 'closed_invite_only' } };
+    }
+    if (suffix === '/feature-flag' && method === 'POST') {
+      const current = await dataRequest(`network_feature_flags?organization_id=eq.${encodeURIComponent(organizationId)}&select=organization_id`, {}, session.access_token);
+      const result = current[0]
+        ? await dataRequest(`network_feature_flags?organization_id=eq.${encodeURIComponent(organizationId)}`, { method: 'PATCH', body: JSON.stringify({ enabled: Boolean(body.enabled), updated_by: session.user?.id || null, updated_at: new Date().toISOString() }) }, session.access_token)
+        : await dataRequest('network_feature_flags', { method: 'POST', body: JSON.stringify({ organization_id: organizationId, enabled: Boolean(body.enabled), mode: 'closed_invite_only', updated_by: session.user?.id || null }) }, session.access_token);
+      return { ok: true, enabled: Boolean(body.enabled), flag: Array.isArray(result) ? result[0] : result };
+    }
+    const collection = suffix.match(/^\/(invites|vendor-profiles|programs|service-orders|events)$/);
+    if (collection && method === 'GET') {
+      const table = { invites: 'network_invites', 'vendor-profiles': 'network_vendor_profiles', programs: 'network_programs', 'service-orders': 'network_service_orders', events: 'network_events' }[collection[1]];
+      return list(table);
+    }
+    if (collection && method === 'POST' && collection[1] !== 'events' && collection[1] !== 'service-orders') {
+      const table = { invites: 'network_invites', 'vendor-profiles': 'network_vendor_profiles', programs: 'network_programs' }[collection[1]];
+      return insert(table, body);
+    }
+    const requirementCollection = suffix.match(/^\/programs\/([^/]+)\/requirements$/);
+    if (requirementCollection && method === 'GET') return list('network_requirements', `&program_id=eq.${encodeURIComponent(requirementCollection[1])}`);
+    if (requirementCollection && method === 'POST') {
+      const created = await insert('network_requirements', { program_id: requirementCollection[1], reference: body.reference, status: 'draft', current_version: 1, created_by: session.user?.id || null });
+      const requirement = created.item;
+      const versions = await dataRequest('network_requirement_versions', { method: 'POST', body: JSON.stringify({ organization_id: organizationId, requirement_id: requirement.id, version: 1, status: 'draft', payload: body.spec || {}, change_note: body.change_note || '', created_by: session.user?.id || null }) }, session.access_token);
+      const version = Array.isArray(versions) ? versions[0] : versions;
+      const updated = await dataRequest(`network_requirements?id=eq.${encodeURIComponent(requirement.id)}&organization_id=eq.${encodeURIComponent(organizationId)}`, { method: 'PATCH', body: JSON.stringify({ current_version_id: version.id }) }, session.access_token);
+      return { ok: true, item: Array.isArray(updated) ? updated[0] : updated };
+    }
+    const reqRoute = suffix.match(/^\/requirements\/([^/]+)(?:\/(.*))?$/);
+    if (reqRoute && (!reqRoute[2] || reqRoute[2] === '') && method === 'GET') {
+      if (identity.user.role === 'vendor') return edgeFunction('network-orchestrator', { path: route, method, body, organization_id: organizationId }, session.access_token);
+      const rows = await dataRequest(`network_requirements?id=eq.${encodeURIComponent(reqRoute[1])}&organization_id=eq.${encodeURIComponent(organizationId)}&select=*`, {}, session.access_token);
+      return { ok: true, item: rows[0] || null };
+    }
+    if (suffix === '/requirements' && method === 'GET' && identity.user.role === 'vendor') {
+      return edgeFunction('network-orchestrator', { path: route, method, body, organization_id: organizationId }, session.access_token);
+    }
+    const directTables = {
+      '/requirements': 'network_requirements',
+      '/comparisons': 'network_comparisons',
+      '/awards': 'network_awards'
+    };
+    for (const [prefix, table] of Object.entries(directTables)) {
+      if (suffix === prefix && method === 'GET') return list(table);
+    }
+    const activate = suffix.match(/^\/awards\/([^/]+)\/activate$/);
+    if (activate && method === 'POST') {
+      const result = await rpc('network_activate_award', { p_award_id: activate[1], p_idempotency_key: body.idempotency_key || null }, session.access_token);
+      return { ok: true, item: result, fleet: result };
+    }
+    // Matching, comparison, award approval and evidence transitions are kept
+    // behind a deployed Supabase orchestration adapter so they remain atomic
+    // and do not devolve into a browser-side multi-write workflow.
+    if (route.startsWith('/api/network/v1/')) {
+      return edgeFunction('network-orchestrator', { path: route, method, body, organization_id: organizationId }, session.access_token);
+    }
+    throw new Error(`Supabase Network route not implemented: ${method} ${path}`);
+  }
+
   async function supabaseDomainRequest(path, options = {}) {
     const session = await refreshIfNeeded();
     if (!session?.access_token) throw new Error('Sign in required.');
@@ -747,6 +1031,11 @@
     if (path === '/api/auth/me' && method === 'GET') return currentUser();
     if (path === '/api/auth/me' && method === 'PATCH') return updateMe(payload);
     if (path === '/api/auth/logout' && method === 'POST') return signOut();
+    const phase3Result = await supabasePhase3Request(path, options);
+    if (phase3Result !== undefined) return phase3Result;
+    const p0Result = await supabaseP0Request(path, options);
+    if (p0Result !== undefined) return p0Result;
+    if (path.startsWith('/api/network/v1')) return supabaseNetworkRequest(path, options);
     if (path.startsWith('/api/overview') || /^\/api\/(customers|drivers|vehicles|bookings|duties|invoices|payments|sync|branches|suppliers|price-books|documents|invitations|employees|policies|approvals|notifications|devices|reports|audit|tickets|privacy|integrations|organization|settings|onboarding|setup|network|supplier-bills|costs|vehicle-costs|driver-payouts|supplier-payouts|financial-actions|alerts|geofences|sla|tax|admin|capacity|billing-notes|payment-links|jobs|security)/.test(path)) return supabaseDomainRequest(path, options);
     throw new Error(`Supabase adapter route not implemented: ${method} ${path}`);
   }

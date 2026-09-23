@@ -110,6 +110,26 @@ class MockEInvoiceProvider:
         return ProviderResult(True, "cancelled", self.name, irn, {"reason": reason})
 
 
+class MockHRMSProvider:
+    """Deterministic HRMS boundary; replace with a signed webhook/worker adapter in production."""
+    name = "mock_hrms"
+
+    def sync(self, *, records: list[dict[str, Any]], idempotency_key: str | None = None) -> ProviderResult:
+        key = idempotency_key or repr(records)
+        reference = "mock_hrms_" + hashlib.sha256(key.encode()).hexdigest()[:18]
+        return ProviderResult(True, "accepted", self.name, reference, {"records_received": len(records), "idempotency_key": idempotency_key})
+
+
+class MockGPSProvider:
+    """Deterministic telematics boundary for signed position batches."""
+    name = "mock_gps"
+
+    def ingest(self, *, positions: list[dict[str, Any]], idempotency_key: str | None = None) -> ProviderResult:
+        key = idempotency_key or repr(positions)
+        reference = "mock_gps_" + hashlib.sha256(key.encode()).hexdigest()[:18]
+        return ProviderResult(True, "accepted", self.name, reference, {"positions_received": len(positions), "idempotency_key": idempotency_key})
+
+
 class MockStorageProvider:
     name = "mock_storage"
 
@@ -132,6 +152,8 @@ class ProviderRegistry:
     maps: MockMapsProvider
     einvoice: MockEInvoiceProvider
     storage: MockStorageProvider
+    hrms: MockHRMSProvider
+    gps: MockGPSProvider
 
     @classmethod
     def mock(cls) -> "ProviderRegistry":
@@ -142,6 +164,8 @@ class ProviderRegistry:
             maps=MockMapsProvider(),
             einvoice=MockEInvoiceProvider(),
             storage=MockStorageProvider(),
+            hrms=MockHRMSProvider(),
+            gps=MockGPSProvider(),
         )
 
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,9 +22,9 @@ import * as Location from 'expo-location';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Notifications from 'expo-notifications';
 import SignatureScreen from 'react-native-signature-canvas';
-import { assignedDuty, currentUser, recordExpense, recordProof, registerDevice, replay, sendSos, signIn, signOut, testMaskedCall, transitionDuty } from './src/api';
+import { assignedDuty, currentUser, mobileOperationsHome, recordExpense, recordProof, registerDevice, replay, sendSos, signIn, signOut, testMaskedCall, transitionDuty } from './src/api';
 import { bufferLocation, flushLocationBuffer, startBackgroundLocation, stopBackgroundLocation } from './src/locationTask';
-import type { Duty, QueueOperation, SessionUser } from './src/types';
+import type { Duty, MobileHome, QueueOperation, SessionUser } from './src/types';
 
 const QUEUE_KEY = 'axiom_driver_native_queue_v1';
 const DEVICE_KEY = 'axiom_driver_native_device_id';
@@ -40,7 +40,12 @@ function dutyAction(status?: string) { return ({ assigned: 'Accept duty', accept
 function nextStatus(status?: string) { return ({ assigned: 'accepted', accepted: 'en_route', en_route: 'started', paused: 'started' } as Record<string, string>)[status || ''] || status; }
 function time(value?: string | null) { if (!value) return 'Today'; return new Date(value).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }); }
 
-async function readQueue(): Promise<QueueOperation[]> { try { return JSON.parse((await AsyncStorage.getItem(QUEUE_KEY)) || '[]'); } catch (_) { return []; } }
+async function readQueue(): Promise<QueueOperation[]> {
+  try {
+    const parsed = JSON.parse((await AsyncStorage.getItem(QUEUE_KEY)) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) { return []; }
+}
 async function writeQueue(queue: QueueOperation[]) { await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue)); }
 async function registerPushDevice() {
   try {
@@ -59,6 +64,7 @@ async function registerPushDevice() {
 export default function App() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [duty, setDuty] = useState<Duty | null>(null);
+  const [mobileHome, setMobileHome] = useState<MobileHome | null>(null);
   const [queue, setQueue] = useState<QueueOperation[]>([]);
   const [screen, setScreen] = useState<Screen>('today');
   const [online, setOnline] = useState(true);
@@ -76,25 +82,42 @@ export default function App() {
   const [expenseNote, setExpenseNote] = useState('');
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
   const queueRef = useRef<QueueOperation[]>([]);
+  const onlineRef = useRef(true);
+  const syncingRef = useRef(false);
+  const refreshRef = useRef<Promise<void> | null>(null);
 
-  const refresh = async () => { try { setDuty(await assignedDuty()); } catch (error) { Alert.alert('Could not load duty', (error as Error).message); } };
+  const refresh = async () => {
+    if (refreshRef.current) return refreshRef.current;
+    const task = (async () => {
+      try { const [dutyResult, homeResult] = await Promise.allSettled([assignedDuty(), mobileOperationsHome()]); if (dutyResult.status === 'rejected') throw dutyResult.reason; setDuty(dutyResult.value); setMobileHome(homeResult.status === 'fulfilled' ? homeResult.value : null); }
+      catch (error) { Alert.alert('Could not load duty', (error as Error).message); }
+    })();
+    refreshRef.current = task;
+    try { await task; } finally { refreshRef.current = null; }
+  };
   const saveQueue = async (next: QueueOperation[]) => { queueRef.current = next; setQueue(next); await writeQueue(next); };
   const addQueue = async (operation: Omit<QueueOperation, 'idempotency_key' | 'created_at'>) => { const next = [...queueRef.current, { ...operation, idempotency_key: idempotency('native'), created_at: new Date().toISOString() }]; await saveQueue(next); };
 
   const syncQueue = async () => {
-    if (!online) return;
+    if (!onlineRef.current || syncingRef.current) return;
     const pending = queueRef.current;
+    if (!pending.length) {
+      await flushLocationBuffer();
+      return;
+    }
+    syncingRef.current = true;
     setBusy(true);
     try {
       await flushLocationBuffer();
-      if (!pending.length) return;
       const deviceId = (await SecureStore.getItemAsync(DEVICE_KEY)) || 'axiom-driver-native';
       const result = await replay(pending, deviceId);
-      const next = pending.filter(item => result.failed.has(item.idempotency_key));
-      await saveQueue(next);
+      const pendingKeys = new Set(pending.map(item => item.idempotency_key));
+      const newOperations = queueRef.current.filter(item => !pendingKeys.has(item.idempotency_key));
+      const failedOperations = pending.filter(item => result.failed.has(item.idempotency_key));
+      await saveQueue([...newOperations, ...failedOperations]);
       if (result.count) Alert.alert('Sync complete', `${result.count - result.failed.size} field actions replayed safely.`);
     } catch (error) { Alert.alert('Still offline', (error as Error).message); }
-    finally { setBusy(false); }
+    finally { syncingRef.current = false; setBusy(false); }
   };
 
   useEffect(() => {
@@ -107,7 +130,7 @@ export default function App() {
       try { const restored = await currentUser(); setUser(restored); await registerPushDevice(); await refresh(); } catch (_) { /* sign-in screen */ }
       setLoading(false);
     })();
-    const netSubscription = NetInfo.addEventListener(state => { const connected = Boolean(state.isConnected && state.isInternetReachable !== false); setOnline(connected); if (connected) syncQueue(); });
+    const netSubscription = NetInfo.addEventListener(state => { const connected = Boolean(state.isConnected && state.isInternetReachable !== false); onlineRef.current = connected; setOnline(connected); if (connected) syncQueue(); });
     const appSubscription = AppState.addEventListener('change', next => { if (next === 'active') { refresh(); syncQueue(); } });
     return () => { mounted = false; netSubscription(); appSubscription.remove(); locationSubscription.current?.remove(); };
   }, []);
@@ -178,7 +201,7 @@ export default function App() {
 
   if (loading) return <View style={styles.loading}><ActivityIndicator color={colors.teal} /><Text style={styles.loadingText}>Preparing your duty day…</Text></View>;
   if (!user) return <SignIn busy={busy} onSubmit={submitLogin} />;
-  return <SafeAreaView style={styles.safe}><StatusBar barStyle="dark-content" /><View style={styles.app}><Header user={user} online={online} /><ScrollView contentContainerStyle={styles.scroll}>{screen === 'today' ? <Today duty={duty} user={user} busy={busy} online={online} onPrimary={handleDutyAction} onExpense={() => setModal('expense')} onCall={callPassenger} onSos={triggerSos} /> : screen === 'sync' ? <Sync queue={queue} online={online} busy={busy} onSync={syncQueue} /> : <Profile user={user} locationActive={Boolean(duty && ['started', 'en_route'].includes(duty.status))} onLogout={logout} />}</ScrollView><BottomNav screen={screen} queueCount={queue.length} setScreen={setScreen} />{busy && <View style={styles.busy}><ActivityIndicator color={colors.deep} /></View>}</View><DutyModal mode={modal} proofCode={proofCode} proofNote={proofNote} expenseAmount={expenseAmount} expenseType={expenseType} expenseNote={expenseNote} proofPhotoUri={proofPhotoUri} signatureData={signatureData} setProofCode={setProofCode} setProofNote={setProofNote} setExpenseAmount={setExpenseAmount} setExpenseType={setExpenseType} setExpenseNote={setExpenseNote} onCamera={() => setCameraOpen(true)} onSignature={() => setSignatureOpen(true)} onClose={() => setModal(null)} onProof={completeWithProof} onExpense={saveExpense} /> <CameraCapture visible={cameraOpen} onCancel={() => setCameraOpen(false)} onPhoto={uri => { setProofPhotoUri(uri); setCameraOpen(false); }} /> <SignatureCapture visible={signatureOpen} onCancel={() => setSignatureOpen(false)} onSignature={data => { setSignatureData(data); setSignatureOpen(false); }} /> </SafeAreaView>;
+  return <SafeAreaView style={styles.safe}><StatusBar barStyle="dark-content" /><View style={styles.app}><Header user={user} online={online} /><ScrollView contentContainerStyle={styles.scroll}>{screen === 'today' ? <Today duty={duty} home={mobileHome} user={user} busy={busy} online={online} onPrimary={handleDutyAction} onExpense={() => setModal('expense')} onCall={callPassenger} onSos={triggerSos} /> : screen === 'sync' ? <Sync queue={queue} online={online} busy={busy} onSync={syncQueue} /> : <Profile user={user} locationActive={Boolean(duty && ['started', 'en_route'].includes(duty.status))} onLogout={logout} />}</ScrollView><BottomNav screen={screen} queueCount={queue.length} setScreen={setScreen} />{busy && <View style={styles.busy}><ActivityIndicator color={colors.deep} /></View>}</View><DutyModal mode={modal} proofCode={proofCode} proofNote={proofNote} expenseAmount={expenseAmount} expenseType={expenseType} expenseNote={expenseNote} proofPhotoUri={proofPhotoUri} signatureData={signatureData} setProofCode={setProofCode} setProofNote={setProofNote} setExpenseAmount={setExpenseAmount} setExpenseType={setExpenseType} setExpenseNote={setExpenseNote} onCamera={() => setCameraOpen(true)} onSignature={() => setSignatureOpen(true)} onClose={() => setModal(null)} onProof={completeWithProof} onExpense={saveExpense} /> <CameraCapture visible={cameraOpen} onCancel={() => setCameraOpen(false)} onPhoto={uri => { setProofPhotoUri(uri); setCameraOpen(false); }} /> <SignatureCapture visible={signatureOpen} onCancel={() => setSignatureOpen(false)} onSignature={data => { setSignatureData(data); setSignatureOpen(false); }} /> </SafeAreaView>;
 }
 
 function SignIn({ busy, onSubmit }: { busy: boolean; onSubmit: (email: string, password: string) => void }) {
@@ -189,7 +212,7 @@ function SignIn({ busy, onSubmit }: { busy: boolean; onSubmit: (email: string, p
 function Brand() { return <View style={styles.brand}><View style={styles.brandMark}><Text style={styles.brandLetter}>A</Text></View><Text style={styles.brandText}>AXIOM FLEET</Text></View>; }
 function Label({ text, children }: { text: string; children: React.ReactNode }) { return <View style={styles.label}><Text style={styles.labelText}>{text}</Text>{children}</View>; }
 function Header({ user, online }: { user: SessionUser; online: boolean }) { return <View style={styles.header}><View style={styles.headerBrand}><View style={styles.smallMark}><Text style={styles.brandLetter}>A</Text></View><View><Text style={styles.headerTitle}>AXIOM FLEET</Text><Text style={styles.headerSub}>{user.full_name} · Driver</Text></View></View><View style={[styles.network, !online && styles.networkOffline]}><View style={[styles.networkDot, !online && styles.networkDotOffline]} /><Text style={[styles.networkText, !online && styles.networkTextOffline]}>{online ? 'Online' : 'Offline'}</Text></View></View>; }
-function Today({ duty, user, busy, online, onPrimary, onExpense, onCall, onSos }: { duty: Duty | null; user: SessionUser; busy: boolean; online: boolean; onPrimary: () => void; onExpense: () => void; onCall: () => void; onSos: () => void }) { if (!duty) return <><Text style={styles.eyebrowDark}>DRIVER WORKSPACE</Text><Text style={styles.title}>Good morning, {user.full_name.split(' ')[0]}.</Text><Text style={styles.subtitle}>No duty is assigned yet. The fleet desk will publish the next run here.</Text><View style={styles.emptyCard}><Text style={styles.emptyTitle}>Nothing waiting on you</Text><Text style={styles.emptyCopy}>You can still review profile and sync settings while the next duty is being prepared.</Text></View></>; const completed = duty.status === 'completed'; return <><View style={styles.greeting}><View><Text style={styles.eyebrowDark}>{online ? 'TODAY · FIELD MODE' : 'OFFLINE · FIELD MODE'}</Text><Text style={styles.title}>Good morning, {user.full_name.split(' ')[0]}.</Text><Text style={styles.subtitle}>One duty at a time. Everything important stays close.</Text></View><View style={styles.avatar}><Text style={styles.avatarText}>{initials(user.full_name)}</Text></View></View><View style={styles.nextCard}><View style={styles.nextRow}><Text style={styles.nextEyebrow}>NEXT DUTY · {time(duty.reporting_at)}</Text><Text style={styles.statusReady}>● {duty.status.replace('_', ' ')}</Text></View><Text style={styles.nextTitle}>Airport transfer</Text><Text style={styles.nextSub}>{duty.customer || 'Assigned customer'} · {duty.id}</Text><View style={styles.route}><View style={styles.routeNodes}><View style={styles.routeDot} /><View style={styles.routeLink} /><View style={[styles.routeDot, styles.routeEnd]} /></View><View><Text style={styles.routeStrong}>{duty.pickup || 'Pickup'}</Text><Text style={styles.routeSub}>Reporting point · saved for offline use</Text><View style={{ height: 13 }} /><Text style={styles.routeStrong}>{duty.dropoff || 'Drop-off'}</Text><Text style={styles.routeSub}>{duty.vehicle || 'Vehicle assigned'} · {duty.passenger || 'Passenger'}</Text></View></View><Pressable style={styles.mainAction} disabled={busy || completed} onPress={onPrimary}><Text style={styles.mainActionText}>{completed ? 'Duty completed' : dutyAction(duty.status)}</Text></Pressable></View><SectionLabel title="Quick actions" note="Available from the road" /><View style={styles.quickGrid}><Quick title="Add expense" copy="Toll, fuel, parking" icon="₹" color={colors.blueSoft} tint={colors.blue} onPress={onExpense} /><Quick title="Masked call" copy="Passenger stays private" icon="⌕" color={colors.amberSoft} tint={colors.amber} onPress={onCall} /><Quick title="Safety / SOS" copy="Control room aware" icon="!" color={colors.redSoft} tint={colors.red} onPress={onSos} /></View><SectionLabel title="Duty timeline" note="Verified milestones" /><View style={styles.timelineCard}><Timeline time={time(duty.reporting_at)} title="Duty assigned" copy={`${duty.vehicle || 'Vehicle'} · route saved for offline use`} /><Timeline time="Now" title={duty.status.replace('_', ' ')} copy={duty.status === 'assigned' ? 'Start when you are ready.' : 'The fleet desk can see this milestone.'} /><Timeline time="Next" title={completed ? 'Duty closed' : 'Proof and close'} copy={completed ? 'Evidence packet is ready for billing.' : 'OTP, signature and expense evidence stay attached.'} muted /></View></>; }
+function Today({ duty, home, user, busy, online, onPrimary, onExpense, onCall, onSos }: { duty: Duty | null; home: MobileHome | null; user: SessionUser; busy: boolean; online: boolean; onPrimary: () => void; onExpense: () => void; onCall: () => void; onSos: () => void }) { const openAlerts = home?.summary?.open_alerts || 0; const openDuties = home?.summary?.open_duties || 0; const signalCard = <View style={[styles.timelineCard, { marginBottom: 14, padding: 13 }]}><View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}><View><Text style={styles.sectionTitle}>Mobile operations home</Text><Text style={styles.sectionNote}>Duty, safety and sync stay together</Text></View><Text style={[styles.statusReady, { color: openAlerts ? colors.amber : colors.teal }]}>{openAlerts ? `${openAlerts} alert${openAlerts === 1 ? '' : 's'}` : 'Clear'}</Text></View><View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}><View style={{ flex: 1 }}><Text style={styles.emptyTitle}>{openDuties}</Text><Text style={styles.syncCopy}>open duties</Text></View><View style={{ flex: 1 }}><Text style={styles.emptyTitle}>{openAlerts}</Text><Text style={styles.syncCopy}>safety signals</Text></View><View style={{ flex: 1 }}><Text style={styles.emptyTitle}>Safe</Text><Text style={styles.syncCopy}>replay ready</Text></View></View></View>; if (!duty) return <><Text style={styles.eyebrowDark}>DRIVER WORKSPACE</Text><Text style={styles.title}>Good morning, {user.full_name.split(' ')[0]}.</Text><Text style={styles.subtitle}>No duty is assigned yet. The fleet desk will publish the next run here.</Text>{signalCard}<View style={styles.emptyCard}><Text style={styles.emptyTitle}>Nothing waiting on you</Text><Text style={styles.emptyCopy}>You can still review profile and sync settings while the next duty is being prepared.</Text></View></>; const completed = duty.status === 'completed'; return <><View style={styles.greeting}><View><Text style={styles.eyebrowDark}>{online ? 'TODAY · FIELD MODE' : 'OFFLINE · FIELD MODE'}</Text><Text style={styles.title}>Good morning, {user.full_name.split(' ')[0]}.</Text><Text style={styles.subtitle}>One duty at a time. Everything important stays close.</Text></View><View style={styles.avatar}><Text style={styles.avatarText}>{initials(user.full_name)}</Text></View></View>{signalCard}<View style={styles.nextCard}><View style={styles.nextRow}><Text style={styles.nextEyebrow}>NEXT DUTY · {time(duty.reporting_at)}</Text><Text style={styles.statusReady}>● {duty.status.replace('_', ' ')}</Text></View><Text style={styles.nextTitle}>Airport transfer</Text><Text style={styles.nextSub}>{duty.customer || 'Assigned customer'} · {duty.id}</Text><View style={styles.route}><View style={styles.routeNodes}><View style={styles.routeDot} /><View style={styles.routeLink} /><View style={[styles.routeDot, styles.routeEnd]} /></View><View><Text style={styles.routeStrong}>{duty.pickup || 'Pickup'}</Text><Text style={styles.routeSub}>Reporting point · saved for offline use</Text><View style={{ height: 13 }} /><Text style={styles.routeStrong}>{duty.dropoff || 'Drop-off'}</Text><Text style={styles.routeSub}>{duty.vehicle || 'Vehicle assigned'} · {duty.passenger || 'Passenger'}</Text></View></View><Pressable style={styles.mainAction} disabled={busy || completed} onPress={onPrimary}><Text style={styles.mainActionText}>{completed ? 'Duty completed' : dutyAction(duty.status)}</Text></Pressable></View><SectionLabel title="Quick actions" note="Available from the road" /><View style={styles.quickGrid}><Quick title="Add expense" copy="Toll, fuel, parking" icon="₹" color={colors.blueSoft} tint={colors.blue} onPress={onExpense} /><Quick title="Masked call" copy="Passenger stays private" icon="⌕" color={colors.amberSoft} tint={colors.amber} onPress={onCall} /><Quick title="Safety / SOS" copy="Control room aware" icon="!" color={colors.redSoft} tint={colors.red} onPress={onSos} /></View><SectionLabel title="Duty timeline" note="Verified milestones" /><View style={styles.timelineCard}><Timeline time={time(duty.reporting_at)} title="Duty assigned" copy={`${duty.vehicle || 'Vehicle'} · route saved for offline use`} /><Timeline time="Now" title={duty.status.replace('_', ' ')} copy={duty.status === 'assigned' ? 'Start when you are ready.' : 'The fleet desk can see this milestone.'} /><Timeline time="Next" title={completed ? 'Duty closed' : 'Proof and close'} copy={completed ? 'Evidence packet is ready for billing.' : 'OTP, signature and expense evidence stay attached.'} muted /></View></>; }
 function Quick({ title, copy, icon, color, tint, onPress }: { title: string; copy: string; icon: string; color: string; tint: string; onPress: () => void }) { return <Pressable style={styles.quick} onPress={onPress}><View style={[styles.quickIcon, { backgroundColor: color }]}><Text style={[styles.quickIconText, { color: tint }]}>{icon}</Text></View><Text style={styles.quickTitle}>{title}</Text><Text style={styles.quickCopy}>{copy}</Text></Pressable>; }
 function SectionLabel({ title, note }: { title: string; note: string }) { return <View style={styles.sectionLabel}><Text style={styles.sectionTitle}>{title}</Text><Text style={styles.sectionNote}>{note}</Text></View>; }
 function Timeline({ time: timeValue, title, copy, muted }: { time: string; title: string; copy: string; muted?: boolean }) { return <View style={styles.timelineRow}><Text style={styles.timelineTime}>{timeValue}</Text><View style={[styles.timelineDot, muted && styles.timelineDotMuted]} /><View style={styles.timelineText}><Text style={styles.timelineTitle}>{title}</Text><Text style={styles.timelineCopy}>{copy}</Text></View></View>; }

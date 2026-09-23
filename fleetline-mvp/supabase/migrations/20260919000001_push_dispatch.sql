@@ -1,6 +1,10 @@
--- Axiom Fleet push dispatch contracts.
+-- Axiom Fleet push dispatch and mobile performance contracts.
 -- This keeps the first provider adapter queue-based: a worker/Edge Function can
 -- consume queued notifications and deliver Expo/FCM/APNs messages later.
+
+create index if not exists idx_drivers_user_org on public.drivers(user_id, organization_id);
+create index if not exists idx_duties_driver_org_status on public.duties(driver_id, organization_id, status, reporting_at);
+create index if not exists idx_device_bindings_user_push on public.device_bindings(user_id, organization_id, status) where push_token <> '';
 
 create or replace function public.queue_push_notification(
   p_organization_id uuid,
