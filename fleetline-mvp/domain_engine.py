@@ -22,6 +22,8 @@ def _non_negative_int(value: object, name: str) -> int:
         raise CalculationError(f"{name} must be an integer") from exc
     if number < 0:
         raise CalculationError(f"{name} cannot be negative")
+    if number > 1_000_000_000:
+        raise CalculationError(f"{name} cannot exceed 1000000000")
     return number
 
 

@@ -42,6 +42,13 @@ def main() -> None:
     else:
         raise AssertionError("negative monetary input should be rejected")
 
+    try:
+        calculate_duty({"base_paise": 1_000_000_001})
+    except CalculationError:
+        print("PASS monetary input exceeding 1,000,000,000 is rejected")
+    else:
+        raise AssertionError("monetary input exceeding 1,000,000,000 should be rejected")
+
     print("RESULT calculation engine tests passed")
 
 

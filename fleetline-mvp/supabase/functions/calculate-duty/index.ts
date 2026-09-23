@@ -34,6 +34,9 @@ function calculate(input: Record<string, unknown>) {
   if (values.tax_rate_bps > 10_000) throw new Error("tax_rate_bps cannot exceed 10000");
   const lines: Array<Record<string, unknown>> = [];
   const add = (code: string, label: string, quantity: number, unit: number, amount: number, source: string) => {
+    if (!Number.isSafeInteger(amount) || amount < 0 || amount > Number.MAX_SAFE_INTEGER) {
+      throw new Error(`Calculation line ${code} exceeded maximum integer limits`);
+    }
     if (amount) lines.push({ code, label, quantity, unit_paise: unit, amount_paise: amount, source });
   };
   add("base", "Base duty", 1, values.base_paise, values.base_paise, "price_book");
@@ -44,6 +47,9 @@ function calculate(input: Record<string, unknown>) {
   add("parking", "Parking", 1, values.parking_paise, values.parking_paise, "expense");
   add("expense", "Other expense", 1, values.expense_paise, values.expense_paise, "expense");
   const subtotal_paise = lines.reduce((sum, line) => sum + Number(line.amount_paise), 0);
+  if (!Number.isSafeInteger(subtotal_paise) || subtotal_paise > Number.MAX_SAFE_INTEGER) {
+    throw new Error("Subtotal exceeded maximum integer limits");
+  }
   const tax_paise = roundHalfUp(subtotal_paise * values.tax_rate_bps, 10_000);
   return {
     engine_version: ENGINE_VERSION,
